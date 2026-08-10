@@ -2003,7 +2003,7 @@
     var fields = '';
     if(shared.category){
       fields += '<div class="form-field"><label>Category*</label>' +
-        '<select id="bulk2-category" class="category-select">' + categorySelectOptions(v.category) + '</select>' +
+        '<select id="bulk2-category" class="category-select">' + categorySelectOptions(v.category, PRODUCT_ADD_CATEGORIES.indexOf(v.category)===-1 && v.category!=='__custom__' ? PRODUCT_ADD_CATEGORIES.concat([v.category]) : PRODUCT_ADD_CATEGORIES) + '</select>' +
         '<input type="text" id="bulk2-category-other" class="other-input" placeholder="Type new category name" value="'+escapeHtml(v.categoryOther||'')+'" style="'+(v.category==='__custom__'?'display:block;':'')+'"/>' +
       '</div>';
     }
@@ -2050,7 +2050,7 @@
     var fields = '';
     fields += '<div class="ff-full"><label>Product name</label><input data-item-localid="'+it.localId+'" data-item-field="name" value="'+escapeHtml(it.name||'')+'" placeholder="Product name"/></div>';
     if(!shared.category){
-      fields += '<div><label>Category</label><select class="category-select" data-item-localid="'+it.localId+'" data-item-field="category">' + categorySelectOptions(it.category) + '</select>' +
+      fields += '<div><label>Category</label><select class="category-select" data-item-localid="'+it.localId+'" data-item-field="category">' + categorySelectOptions(it.category, PRODUCT_ADD_CATEGORIES.indexOf(it.category)===-1 && it.category!=='__custom__' ? PRODUCT_ADD_CATEGORIES.concat([it.category]) : PRODUCT_ADD_CATEGORIES) + '</select>' +
         '<input type="text" class="other-input" data-item-localid="'+it.localId+'" data-item-field="categoryOther" placeholder="New category name" value="'+escapeHtml(it.categoryOther||'')+'" style="'+(it.category==='__custom__'?'display:block;':'')+'"/></div>';
     }
     if(!shared.ip){
