@@ -591,15 +591,17 @@
     return Object.keys(set);
   }
   /* ---------- custom category / cost-type helpers ---------- */
-  function allCategoryOptions(){
+  var PRODUCT_ADD_CATEGORIES = ['Pins','Charms','Stickers'];
+  function allCategoryOptions(baseList){
     var custom = (state.data && state.data.customCategories) || [];
-    var list = CATEGORIES.slice();
+    var list = (baseList || CATEGORIES).slice();
     custom.forEach(function(c){ if(list.indexOf(c)===-1) list.push(c); });
     return list;
   }
-  function categorySelectOptions(selected){
-    var isKnown = allCategoryOptions().indexOf(selected)>-1;
-    return allCategoryOptions().map(function(c){
+  function categorySelectOptions(selected, baseList){
+    var opts = allCategoryOptions(baseList);
+    var isKnown = opts.indexOf(selected)>-1;
+    return opts.map(function(c){
       return '<option value="'+escapeHtml(c)+'" '+(selected===c?'selected':'')+'>'+escapeHtml(c)+'</option>';
     }).join('') + '<option value="__custom__" '+(!isKnown && selected==='__custom__'?'selected':'')+'>+ Other (add new category)</option>';
   }
@@ -756,7 +758,7 @@
     var cost=parseFloat(fd.get('cost'))||0;
     var stock=parseInt(fd.get('stock'),10)||0;
     var lowStockAt=parseInt(fd.get('lowStockAt'),10);
-    if(isNaN(lowStockAt)) lowStockAt=5;
+    if(isNaN(lowStockAt)) lowStockAt=0;
     var emoji=(fd.get('emoji')||'').trim();
     if(!name || isNaN(price) || price<0){ state.errorMsg='Enter a valid name and price.'; rerender(); return; }
     var editId = state.modal.editId;
@@ -826,7 +828,7 @@
       step:1,
       shared:{category:true, ip:false, price:false, cost:false, stock:false, lowStock:false, notes:false},
       values:{ category:(CATEGORIES[0]||'Other'), categoryOther:'', ip:'', price:'', priceCurrency:(state.shop.currency||'PHP'),
-        cost:'', costCurrency:(state.shop.currency||'PHP'), stock:1, lowStock:3, notes:'' },
+        cost:'', costCurrency:(state.shop.currency||'PHP'), stock:1, lowStock:0, notes:'' },
       items:[]
     };
     state.modal={type:'bulk-wizard'}; state.errorMsg='';
@@ -900,7 +902,7 @@
   };
   function makeBlankBulkItem(localId, name, image){
     return { localId:localId, image:image||'', name:name||'', notes:'', category:(CATEGORIES[0]||'Other'), categoryOther:'',
-      ip:'', price:'', cost:'', stock:1, lowStock:3 };
+      ip:'', price:'', cost:'', stock:1, lowStock:0 };
   }
   function bulkAddBlankItem(){
     if(!state.bulk) return;
@@ -944,7 +946,7 @@
       var cost = parseFloat(b.shared.cost ? b.values.cost : it.cost)||0;
       var stock = parseInt(b.shared.stock ? b.values.stock : it.stock, 10)||0;
       var lowStockAt = parseInt(b.shared.lowStock ? b.values.lowStock : it.lowStock, 10);
-      if(isNaN(lowStockAt)) lowStockAt = Math.max(1, Math.round(stock*0.25));
+      if(isNaN(lowStockAt)) lowStockAt = 0;
       var notes = (b.shared.notes ? b.values.notes : it.notes) || '';
       var newId = uid('prod');
       state.data.products.push({
@@ -993,7 +995,7 @@
     var newId = uid('prod');
     state.data.products.push({
       id:newId, name:name, category:category, ip:ip, price:price, cost:cost, stock:stock,
-      lowStockAt:Math.max(1, Math.round(stock*0.25)), emoji:'📦', image:'', archived:false, notes:'', bundleOf:ids
+      lowStockAt:0, emoji:'📦', image:'', archived:false, notes:'', bundleOf:ids
     });
     if(stock>0) logStock(newId, name, stock, stock);
     saveShopData();
@@ -1177,7 +1179,7 @@
     if(!state.importPreview) return;
     state.importPreview.forEach(function(p){
       state.data.products.push({id:uid('prod'), name:p.name, category:p.category, ip:p.ip,
-        price:p.price, cost:p.cost, stock:p.stock, lowStockAt:Math.max(3, Math.round(p.stock*0.25)), emoji:'', image:'', archived:false, notes:''});
+        price:p.price, cost:p.cost, stock:p.stock, lowStockAt:0, emoji:'', image:'', archived:false, notes:''});
     });
     saveShopData();
     state.importPreview=null; state.sellerTab='products';
@@ -1326,7 +1328,6 @@
     var t = e.target;
     if(t.id==='product-search-input'){ state.productSearch=t.value; rerender(); }
     else if(t.id==='qs-qty-input'){ state.qsQty=t.value; }
-    else if(t.id==='rs-qty-input'){ state.rsQty=t.value; }
     else if(t.dataset && t.dataset.itemField && state.bulk){
       var bi = state.bulk.items.find(function(x){ return x.localId===t.dataset.itemLocalid; });
       if(bi) bi[t.dataset.itemField] = t.value;
@@ -1346,6 +1347,7 @@
     } else if(t.id==='qs-product-select'){ state.qsProductId = t.value; state.qsQty=1; rerender(); }
     else if(t.id==='qs-qty-select'){ state.qsQty = t.value; rerender(); }
     else if(t.id==='rs-product-select'){ state.rsProductId = t.value; }
+    else if(t.id==='rs-qty-select'){ state.rsQty = t.value; rerender(); }
     else if(t.id==='restore-file-input'){ restoreBackup(t.files[0]); }
     else if(t.id==='product-stock-filter'){ state.productStockFilter = t.value; rerender(); }
     else if(t.id==='product-ip-select'){ state.productIp = t.value; rerender(); }
@@ -2197,7 +2199,7 @@
       '</div>' +
       '<div class="form-field"><label>Name</label><input name="name" required value="'+(p?escapeHtml(p.name):'')+'"/></div>' +
       '<div class="form-row">' +
-        '<div class="form-field"><label>Category</label><select name="category" class="category-select">' + categorySelectOptions(p?p.category:(CATEGORIES[0]||'Other')) + '</select>' +
+        '<div class="form-field"><label>Category</label><select name="category" class="category-select">' + categorySelectOptions(p?p.category:PRODUCT_ADD_CATEGORIES[0], p && PRODUCT_ADD_CATEGORIES.indexOf(p.category)===-1 ? PRODUCT_ADD_CATEGORIES.concat([p.category]) : PRODUCT_ADD_CATEGORIES) + '</select>' +
           '<input type="text" name="categoryOther" class="other-input" placeholder="Type new category name"/>' +
         '</div>' +
         '<div class="form-field"><label>IP / fandom (optional)</label><input name="ip" value="'+(p?escapeHtml(p.ip||''):'')+'" placeholder="e.g. Frieren"/></div>' +
@@ -2208,7 +2210,7 @@
       '</div>' +
       '<div class="form-row">' +
         '<div class="form-field"><label>Stock</label><input type="number" min="0" name="stock" value="'+(p?p.stock:'')+'"/></div>' +
-        '<div class="form-field"><label>Low stock alert</label><input type="number" min="0" name="lowStockAt" value="'+(p?p.lowStockAt:5)+'"/></div>' +
+        '<div class="form-field"><label>Low stock alert</label><input type="number" min="0" name="lowStockAt" value="'+(p?p.lowStockAt:0)+'"/></div>' +
       '</div>' +
       '<div class="form-field"><label>Emoji (optional icon)</label><input name="emoji" maxlength="4" value="'+(p?escapeHtml(p.emoji||''):'')+'" placeholder="📌"/></div>' +
       (state.errorMsg?'<div class="form-error">'+escapeHtml(state.errorMsg)+'</div>':'') +
@@ -2291,12 +2293,15 @@
       return '<div class="modal-head"><h3>Quick restock</h3><button class="icon-btn" data-action="close-modal">✕</button></div>' +
       '<div class="modal-body"><div class="empty-box">You don\'t have any products yet. Add one from the Products page first.</div></div>';
     }
+    var qty = Math.min(Math.max(1, parseInt(state.rsQty,10)||1), 5);
     return '<div class="modal-head"><h3>Quick restock</h3><button class="icon-btn" data-action="close-modal">✕</button></div>' +
     '<div class="modal-body">' +
       '<div class="form-field"><label>Product</label><select id="rs-product-select">' +
         products.map(function(p){ return '<option value="'+p.id+'" '+(state.rsProductId===p.id?'selected':'')+'>'+escapeHtml(p.name)+' (currently '+p.stock+')</option>'; }).join('') +
       '</select></div>' +
-      '<div class="form-field"><label>Add stock</label><input id="rs-qty-input" type="number" min="1" value="'+state.rsQty+'"/></div>' +
+      '<div class="form-field"><label>Add stock</label><select id="rs-qty-select">' +
+        [1,2,3,4,5].map(function(n){ return '<option value="'+n+'" '+(qty===n?'selected':'')+'>'+n+'</option>'; }).join('') +
+      '</select></div>' +
       (state.errorMsg?'<div class="form-error">'+escapeHtml(state.errorMsg)+'</div>':'') +
       '<button class="btn btn-primary btn-block" data-action="rs-confirm">Add to stock</button>' +
     '</div>';
