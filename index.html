@@ -1094,9 +1094,15 @@
     state.qsCart = state.qsCart.filter(function(l){ return l.productId!==productId; });
     rerender();
   }
+  function cashFriendlyTotal(total){
+    var whole = Math.round(total*100)/100;
+    if(Number.isInteger(whole) && whole % 10 === 5) return whole - 5;
+    return whole;
+  }
   function qsComplete(){
     if(!state.qsCart.length){ state.errorMsg='Add at least one item first.'; rerender(); return; }
-    var total = state.qsCart.reduce(function(a,l){ return a+l.price*l.qty; },0);
+    var rawTotal = state.qsCart.reduce(function(a,l){ return a+l.price*l.qty; },0);
+    var total = cashFriendlyTotal(rawTotal);
     var sale = {id:uid('sale'), date:new Date().toISOString(), items:state.qsCart.slice(), total:total, status:'Completed'};
     sale.items.forEach(function(it){
       var p = productById(it.productId);
@@ -1115,7 +1121,7 @@
     if(!p){ state.errorMsg='Choose a product first.'; rerender(); return; }
     if(!p.stock || p.stock<=0){ state.errorMsg='This product is out of stock.'; rerender(); return; }
     var qty = Math.min(Math.max(1, parseInt(state.qsQty,10)||1), 5, p.stock);
-    var total = p.price*qty;
+    var total = cashFriendlyTotal(p.price*qty);
     var sale = {id:uid('sale'), date:new Date().toISOString(), items:[{productId:p.id, name:p.name, price:p.price, cost:p.cost, qty:qty}], total:total, status:'Completed'};
     p.stock = Math.max(0, p.stock - qty);
     logStock(p.id, p.name, -qty, p.stock);
@@ -2269,7 +2275,9 @@
     var maxQty = Math.max(1, Math.min(5, p.stock||0));
     var outOfStock = !p.stock || p.stock<=0;
     var qty = Math.min(Math.max(1, parseInt(state.qsQty,10)||1), Math.max(1,maxQty));
-    var lineTotal = p.price*qty;
+    var rawTotal = p.price*qty;
+    var lineTotal = cashFriendlyTotal(rawTotal);
+    var rounded = lineTotal!==rawTotal;
     return '<div class="modal-head"><h3>Quick sale</h3><button class="icon-btn" data-action="close-modal">✕</button></div>' +
     '<div class="modal-body">' +
       '<div class="form-row" style="align-items:flex-end;">' +
@@ -2282,6 +2290,7 @@
       '</div>' +
       (outOfStock ? '<div class="form-error">This product is out of stock.</div>' : '') +
       (state.errorMsg?'<div class="form-error">'+escapeHtml(state.errorMsg)+'</div>':'') +
+      (rounded ? '<div class="hint small" style="text-align:right;margin-bottom:2px;">Subtotal '+money(rawTotal)+' · rounded down '+money(rawTotal-lineTotal)+'</div>' : '') +
       '<div class="qs-total"><span>Total</span><span>'+money(lineTotal)+'</span></div>' +
       '<button class="btn btn-primary btn-block" style="margin-top:14px;" data-action="qs-quick-complete" '+(outOfStock?'disabled':'')+'>⚡ Quick sale</button>' +
     '</div>';
