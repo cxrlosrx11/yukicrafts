@@ -53,11 +53,12 @@
   .icon-btn{border:none;background:var(--accent-softer);width:32px;height:32px;border-radius:8px;font-size:14px;display:inline-flex;align-items:center;justify-content:center;flex:none;}
   .link-btn{border:none;background:none;color:var(--accent-dark);font-weight:700;font-size:13px;padding:0;}
 
-  .form-field{margin-bottom:14px;display:flex;flex-direction:column;gap:6px;}
+  .form-field{margin-bottom:14px;display:flex;flex-direction:column;gap:6px;min-width:0;}
   .form-field label{font-size:13px;font-weight:700;color:var(--muted);}
-  .form-field input,.form-field select,.form-field textarea{border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:14px;background:#fff;color:var(--ink);}
+  .form-field input,.form-field select,.form-field textarea{border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:14px;background:#fff;color:var(--ink);width:100%;min-width:0;max-width:100%;}
   .form-field input:focus,.form-field select:focus,.form-field textarea:focus,.list-search:focus,.import-textarea:focus{outline:2px solid var(--accent-soft);outline-offset:1px;border-color:var(--accent);}
-  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;min-width:0;}
+  .form-row > *{min-width:0;}
   .form-error{background:#FDEAEA;color:var(--red);border-radius:8px;padding:8px 12px;font-size:13px;margin-bottom:12px;}
   .form-success{background:#E9F8F1;color:var(--green);border-radius:8px;padding:8px 12px;font-size:13px;margin-bottom:12px;}
   .hint{color:var(--muted);font-size:14px;line-height:1.5;}
@@ -257,7 +258,7 @@
 
   /* ---------- MODAL ---------- */
   .modal-overlay{position:fixed;inset:0;background:rgba(35,26,31,0.32);z-index:40;}
-  .modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:18px;width:460px;max-width:92vw;max-height:86vh;overflow-y:auto;z-index:41;box-shadow:0 24px 60px rgba(35,26,31,0.25);}
+  .modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:18px;width:460px;max-width:92vw;max-height:86vh;overflow-y:auto;overflow-x:hidden;z-index:41;box-shadow:0 24px 60px rgba(35,26,31,0.25);}
   .modal.modal-wide{width:640px;}
   .modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border);}
   .modal-body{padding:20px 22px 26px;}
@@ -421,6 +422,11 @@
     .table-row span:nth-child(4),.table-row span:nth-child(5){display:none;}
     .table-head span:nth-child(4),.table-head span:nth-child(5){display:none;}
     .form-row{grid-template-columns:1fr;}
+    .wizard-2col{grid-template-columns:1fr;}
+    .share-grid{grid-template-columns:1fr 1fr;}
+    .bulk-item-fields{grid-template-columns:1fr;}
+    .modal{top:12px;left:12px;right:12px;transform:none;width:auto;max-width:none;max-height:calc(100vh - 24px);}
+    .wizard-modal{width:auto;}
   }
 </style>
 </head>
@@ -1102,6 +1108,20 @@
     state.qsCart=[]; state.modal=null; state.errorMsg='';
     rerender();
   }
+  function qsQuickComplete(){
+    var p = productById(state.qsProductId);
+    if(!p){ state.errorMsg='Choose a product first.'; rerender(); return; }
+    if(!p.stock || p.stock<=0){ state.errorMsg='This product is out of stock.'; rerender(); return; }
+    var qty = Math.min(Math.max(1, parseInt(state.qsQty,10)||1), 5, p.stock);
+    var total = p.price*qty;
+    var sale = {id:uid('sale'), date:new Date().toISOString(), items:[{productId:p.id, name:p.name, price:p.price, cost:p.cost, qty:qty}], total:total, status:'Completed'};
+    p.stock = Math.max(0, p.stock - qty);
+    logStock(p.id, p.name, -qty, p.stock);
+    state.data.sales.unshift(sale);
+    saveShopData();
+    state.qsCart=[]; state.qsQty=1; state.modal=null; state.errorMsg='';
+    rerender();
+  }
   function rsConfirm(){
     var p = productById(state.rsProductId);
     var qty = Math.max(1, parseInt(state.rsQty,10)||1);
@@ -1259,6 +1279,7 @@
       case 'qs-add-item': qsAddItem(); return;
       case 'qs-remove-item': qsRemoveItem(id); return;
       case 'qs-complete': qsComplete(); return;
+      case 'qs-quick-complete': qsQuickComplete(); return;
       case 'rs-confirm': rsConfirm(); return;
       case 'product-cat-filter': state.productCategory = btn.dataset.cat; break;
       case 'product-ip-filter': state.productIp = btn.dataset.ip; break;
@@ -1322,7 +1343,8 @@
       var idx = state.db.shops.findIndex(function(s){ return s.id===state.shop.id; });
       if(idx>-1) state.db.shops[idx]=state.shop;
       saveDB(); rerender();
-    } else if(t.id==='qs-product-select'){ state.qsProductId = t.value; }
+    } else if(t.id==='qs-product-select'){ state.qsProductId = t.value; state.qsQty=1; rerender(); }
+    else if(t.id==='qs-qty-select'){ state.qsQty = t.value; rerender(); }
     else if(t.id==='rs-product-select'){ state.rsProductId = t.value; }
     else if(t.id==='restore-file-input'){ restoreBackup(t.files[0]); }
     else if(t.id==='product-stock-filter'){ state.productStockFilter = t.value; rerender(); }
@@ -2235,28 +2257,31 @@
   }
 
   function renderQuickSaleModal(){
-    var products = state.data.products;
+    var products = state.data.products.filter(function(p){ return !p.archived; });
     if(!products.length){
       return '<div class="modal-head"><h3>Quick sale</h3><button class="icon-btn" data-action="close-modal">✕</button></div>' +
       '<div class="modal-body"><div class="empty-box">You don\'t have any products yet. Add one from the Products page first.</div></div>';
     }
-    var total = state.qsCart.reduce(function(a,l){ return a+l.price*l.qty; },0);
+    var p = productById(state.qsProductId) || products[0];
+    if(!p) p = products[0];
+    var maxQty = Math.max(1, Math.min(5, p.stock||0));
+    var outOfStock = !p.stock || p.stock<=0;
+    var qty = Math.min(Math.max(1, parseInt(state.qsQty,10)||1), Math.max(1,maxQty));
+    var lineTotal = p.price*qty;
     return '<div class="modal-head"><h3>Quick sale</h3><button class="icon-btn" data-action="close-modal">✕</button></div>' +
     '<div class="modal-body">' +
       '<div class="form-row" style="align-items:flex-end;">' +
         '<div class="form-field"><label>Product</label><select id="qs-product-select">' +
-          products.map(function(p){ return '<option value="'+p.id+'" '+(state.qsProductId===p.id?'selected':'')+'>'+escapeHtml(p.name)+' ('+p.stock+' left)</option>'; }).join('') +
+          products.map(function(pp){ return '<option value="'+pp.id+'" '+(p.id===pp.id?'selected':'')+'>'+escapeHtml(pp.name)+' ('+pp.stock+' left)</option>'; }).join('') +
         '</select></div>' +
-        '<div class="form-field"><label>Qty</label><input id="qs-qty-input" type="number" min="1" value="'+state.qsQty+'"/></div>' +
+        '<div class="form-field"><label>Qty</label><select id="qs-qty-select">' +
+          [1,2,3,4,5].map(function(n){ return '<option value="'+n+'" '+(qty===n?'selected':'')+' '+(n>p.stock?'disabled':'')+'>'+n+'</option>'; }).join('') +
+        '</select></div>' +
       '</div>' +
-      '<button class="btn btn-ghost btn-block" data-action="qs-add-item">+ Add item</button>' +
+      (outOfStock ? '<div class="form-error">This product is out of stock.</div>' : '') +
       (state.errorMsg?'<div class="form-error">'+escapeHtml(state.errorMsg)+'</div>':'') +
-      '<hr style="border:none;border-top:1px solid var(--border);margin:16px 0;"/>' +
-      (state.qsCart.length ? state.qsCart.map(function(l){
-        return '<div class="qs-line"><span>'+l.qty+'× '+escapeHtml(l.name)+'</span><span>'+money(l.price*l.qty)+' <button class="icon-btn btn-sm" data-action="qs-remove-item" data-id="'+l.productId+'">✕</button></span></div>';
-      }).join('') : '<p class="hint small">No items added yet.</p>') +
-      '<div class="qs-total"><span>Total</span><span>'+money(total)+'</span></div>' +
-      '<button class="btn btn-primary btn-block" style="margin-top:14px;" data-action="qs-complete" '+(state.qsCart.length?'':'disabled')+'>Complete sale</button>' +
+      '<div class="qs-total"><span>Total</span><span>'+money(lineTotal)+'</span></div>' +
+      '<button class="btn btn-primary btn-block" style="margin-top:14px;" data-action="qs-quick-complete" '+(outOfStock?'disabled':'')+'>⚡ Quick sale</button>' +
     '</div>';
   }
 
@@ -2305,6 +2330,11 @@
     appEl.addEventListener('submit', onSubmit);
     appEl.addEventListener('input', onInput);
     appEl.addEventListener('change', onChange);
+    appEl.addEventListener('keydown', function(e){
+      if(e.key==='Enter' && e.target && e.target.tagName==='INPUT' && e.target.type!=='submit' && e.target.closest('form[data-form]')){
+        e.preventDefault();
+      }
+    });
 
     state.storageOk = hasLS();
     loadDB();
