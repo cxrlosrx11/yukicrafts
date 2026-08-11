@@ -328,8 +328,8 @@
   .wizard-2col{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;}
   .wizard-field-full{grid-column:1 / -1;}
   .field-with-currency{display:flex;gap:8px;}
-  .field-with-currency input{flex:1;}
-  .field-with-currency select{border:1px solid var(--border);border-radius:10px;padding:0 8px;font-size:12.5px;font-weight:700;background:#fff;}
+  .field-with-currency input{flex:1 1 0%;min-width:0;}
+  .field-with-currency select{border:1px solid var(--border);border-radius:10px;padding:0 8px;font-size:12.5px;font-weight:700;background:#fff;flex:0 0 auto;width:auto;}
 
   .drop-zone{border:1.5px dashed var(--border);border-radius:14px;padding:22px;text-align:center;background:var(--accent-softer);cursor:pointer;margin-bottom:18px;}
   .drop-zone.drag-over{border-color:var(--accent);background:var(--accent-soft);}
