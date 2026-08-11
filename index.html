@@ -611,6 +611,33 @@
     var exists = allCategoryOptions().some(function(c){ return c.toLowerCase()===name.toLowerCase(); });
     if(!exists) state.data.customCategories.push(name);
   }
+  /* ---------- custom IP / series helpers ---------- */
+  function allIpOptions(){
+    var set = {};
+    (state.data && state.data.customIps || []).forEach(function(c){ set[c]=true; });
+    allIps().forEach(function(c){ set[c]=true; });
+    return Object.keys(set);
+  }
+  function ipSelectOptions(selected){
+    var opts = allIpOptions();
+    var sel = selected || '';
+    var html = '';
+    if(opts.length){
+      html += '<option value="" '+(sel===''?'selected':'')+'>No IP / series</option>';
+    }
+    html += opts.map(function(c){
+      return '<option value="'+escapeHtml(c)+'" '+(sel===c?'selected':'')+'>'+escapeHtml(c)+'</option>';
+    }).join('');
+    var isKnown = sel==='' || opts.indexOf(sel)>-1;
+    html += '<option value="__custom__" '+(!isKnown && sel==='__custom__'?'selected':'')+'>+ Add new IP/series</option>';
+    return html;
+  }
+  function addCustomIp(name){
+    if(!name) return;
+    if(!state.data.customIps) state.data.customIps=[];
+    var exists = allIpOptions().some(function(c){ return c.toLowerCase()===name.toLowerCase(); });
+    if(!exists) state.data.customIps.push(name);
+  }
   function allCostTypeOptions(){
     var custom = (state.data && state.data.customCostTypes) || [];
     var list = COST_TYPES.slice();
@@ -753,7 +780,14 @@
       category = customCat;
       addCustomCategory(customCat);
     }
-    var ip=(fd.get('ip')||'').trim();
+    var ip=fd.get('ip')||'';
+    if(ip==='__custom__'){
+      var customIp=(fd.get('ipOther')||'').trim();
+      ip = customIp;
+      addCustomIp(customIp);
+    } else {
+      ip = ip.trim();
+    }
     var price=parseFloat(fd.get('price'));
     var cost=parseFloat(fd.get('cost'))||0;
     var stock=parseInt(fd.get('stock'),10)||0;
@@ -1367,6 +1401,11 @@
         var biCat = state.bulk.items.find(function(x){ return x.localId===t.dataset.itemLocalid; });
         if(biCat) biCat[t.dataset.itemField] = t.value;
       }
+    }
+    else if(t.classList && t.classList.contains('ip-select')){
+      var wrapIp = t.closest('.form-field') || t.parentElement;
+      var otherElIp = wrapIp ? wrapIp.querySelector('.other-input') : null;
+      if(otherElIp) otherElIp.style.display = (t.value==='__custom__') ? 'block' : 'none';
     }
     else if(t.classList && t.classList.contains('costtype-select')){
       var wrap2 = t.closest('.form-field') || t.parentElement;
@@ -2208,7 +2247,9 @@
         '<div class="form-field"><label>Category</label><select name="category" class="category-select">' + categorySelectOptions(p?p.category:PRODUCT_ADD_CATEGORIES[0], p && PRODUCT_ADD_CATEGORIES.indexOf(p.category)===-1 ? PRODUCT_ADD_CATEGORIES.concat([p.category]) : PRODUCT_ADD_CATEGORIES) + '</select>' +
           '<input type="text" name="categoryOther" class="other-input" placeholder="Type new category name"/>' +
         '</div>' +
-        '<div class="form-field"><label>IP / fandom (optional)</label><input name="ip" value="'+(p?escapeHtml(p.ip||''):'')+'" placeholder="e.g. Frieren"/></div>' +
+        '<div class="form-field"><label>IP / series (optional)</label><select name="ip" class="ip-select">' + ipSelectOptions(p?(p.ip||''):'') + '</select>' +
+          '<input type="text" name="ipOther" class="other-input" placeholder="Type new IP / series name"/>' +
+        '</div>' +
       '</div>' +
       '<div class="form-row">' +
         '<div class="form-field"><label>Price</label><input type="number" step="0.01" min="0" name="price" required value="'+(p?p.price:'')+'"/></div>' +
