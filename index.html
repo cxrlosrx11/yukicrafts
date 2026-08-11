@@ -861,7 +861,7 @@
     state.bulk = {
       step:1,
       shared:{category:true, ip:false, price:false, cost:false, stock:false, lowStock:false, notes:false},
-      values:{ category:(CATEGORIES[0]||'Other'), categoryOther:'', ip:'', price:'', priceCurrency:(state.shop.currency||'PHP'),
+      values:{ category:(CATEGORIES[0]||'Other'), categoryOther:'', ip:'', ipOther:'', price:'', priceCurrency:(state.shop.currency||'PHP'),
         cost:'', costCurrency:(state.shop.currency||'PHP'), stock:1, lowStock:0, notes:'' },
       items:[]
     };
@@ -887,7 +887,14 @@
         if(sel.value==='__custom__' && !b.values.categoryOther){ state.errorMsg='Enter a name for the new category.'; rerender(); return; }
       }
     }
-    if(b.shared.ip){ var ipEl=document.getElementById('bulk2-ip'); if(ipEl) b.values.ip = ipEl.value; }
+    if(b.shared.ip){
+      var ipSel = document.getElementById('bulk2-ip');
+      if(ipSel){
+        b.values.ip = ipSel.value;
+        var ipOtherEl = document.getElementById('bulk2-ip-other');
+        b.values.ipOther = ipOtherEl ? ipOtherEl.value.trim() : '';
+      }
+    }
     if(b.shared.stock){ var stEl=document.getElementById('bulk2-stock'); if(stEl) b.values.stock = stEl.value; }
     if(b.shared.lowStock){ var lsEl=document.getElementById('bulk2-lowstock'); if(lsEl) b.values.lowStock = lsEl.value; }
     if(b.shared.price){
@@ -936,7 +943,7 @@
   };
   function makeBlankBulkItem(localId, name, image){
     return { localId:localId, image:image||'', name:name||'', notes:'', category:(CATEGORIES[0]||'Other'), categoryOther:'',
-      ip:'', price:'', cost:'', stock:1, lowStock:0 };
+      ip:'', ipOther:'', price:'', cost:'', stock:1, lowStock:0 };
   }
   function bulkAddBlankItem(){
     if(!state.bulk) return;
@@ -976,6 +983,8 @@
       var categoryOther = b.shared.category ? b.values.categoryOther : it.categoryOther;
       if(category==='__custom__'){ category = (categoryOther||'').trim() || 'Other'; addCustomCategory(category); }
       var ip = (b.shared.ip ? b.values.ip : it.ip) || '';
+      var ipOther = (b.shared.ip ? b.values.ipOther : it.ipOther) || '';
+      if(ip==='__custom__'){ ip = ipOther.trim(); addCustomIp(ip); }
       var price = parseFloat(b.shared.price ? b.values.price : it.price)||0;
       var cost = parseFloat(b.shared.cost ? b.values.cost : it.cost)||0;
       var stock = parseInt(b.shared.stock ? b.values.stock : it.stock, 10)||0;
@@ -1413,6 +1422,10 @@
       var wrapIp = t.closest('.form-field') || t.parentElement;
       var otherElIp = wrapIp ? wrapIp.querySelector('.other-input') : null;
       if(otherElIp) otherElIp.style.display = (t.value==='__custom__') ? 'block' : 'none';
+      if(t.dataset && t.dataset.itemField && state.bulk){
+        var biIp = state.bulk.items.find(function(x){ return x.localId===t.dataset.itemLocalid; });
+        if(biIp) biIp[t.dataset.itemField] = t.value;
+      }
     }
     else if(t.classList && t.classList.contains('costtype-select')){
       var wrap2 = t.closest('.form-field') || t.parentElement;
@@ -2060,7 +2073,10 @@
       '</div>';
     }
     if(shared.ip){
-      fields += '<div class="form-field"><label>IP / series</label><input id="bulk2-ip" placeholder="No IP / series" value="'+escapeHtml(v.ip||'')+'"/></div>';
+      fields += '<div class="form-field"><label>IP / series</label>' +
+        '<select id="bulk2-ip" class="ip-select">' + ipSelectOptions(v.ip) + '</select>' +
+        '<input type="text" id="bulk2-ip-other" class="other-input" placeholder="Type new IP / series name" value="'+escapeHtml(v.ipOther||'')+'" style="'+(v.ip==='__custom__'?'display:block;':'')+'"/>' +
+      '</div>';
     }
     if(shared.stock){
       fields += '<div class="form-field"><label>Stock</label><input type="number" min="0" id="bulk2-stock" value="'+escapeHtml(v.stock||'')+'"/></div>';
@@ -2106,7 +2122,8 @@
         '<input type="text" class="other-input" data-item-localid="'+it.localId+'" data-item-field="categoryOther" placeholder="New category name" value="'+escapeHtml(it.categoryOther||'')+'" style="'+(it.category==='__custom__'?'display:block;':'')+'"/></div>';
     }
     if(!shared.ip){
-      fields += '<div><label>IP / series</label><input data-item-localid="'+it.localId+'" data-item-field="ip" value="'+escapeHtml(it.ip||'')+'" placeholder="Optional"/></div>';
+      fields += '<div><label>IP / series</label><select class="ip-select" data-item-localid="'+it.localId+'" data-item-field="ip">' + ipSelectOptions(it.ip) + '</select>' +
+        '<input type="text" class="other-input" data-item-localid="'+it.localId+'" data-item-field="ipOther" placeholder="New IP / series name" value="'+escapeHtml(it.ipOther||'')+'" style="'+(it.ip==='__custom__'?'display:block;':'')+'"/></div>';
     }
     if(!shared.price){
       fields += '<div><label>Item price</label><input type="number" step="0.01" min="0" data-item-localid="'+it.localId+'" data-item-field="price" value="'+escapeHtml(it.price||'')+'" placeholder="0.00"/></div>';
