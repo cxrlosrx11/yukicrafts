@@ -1393,8 +1393,31 @@
       if(np) np.notes = t.value;
     }
   }
+  /* Toggles the "+Other" free-text box next to a category/ip/cost-type select.
+     Some browsers (in-app browsers like Facebook/Instagram/TikTok, and some
+     older Android WebViews) don't reliably fire a native 'change' event on
+     <select>, so this is called from several different event types to make
+     sure it still runs. It's safe to call repeatedly / redundantly. */
+  function syncOtherInputForSelect(t){
+    if(!t || !t.classList) return false;
+    var isCat = t.classList.contains('category-select');
+    var isIp = t.classList.contains('ip-select');
+    var isCost = t.classList.contains('costtype-select');
+    if(!isCat && !isIp && !isCost) return false;
+    var wrap = t.closest('.form-field') || t.parentElement;
+    var otherEl = (wrap && wrap.querySelector('.other-input')) || t.nextElementSibling;
+    if(otherEl && otherEl.classList && otherEl.classList.contains('other-input')){
+      otherEl.style.display = (t.value==='__custom__') ? 'block' : 'none';
+    }
+    if((isCat || isIp) && t.dataset && t.dataset.itemField && state.bulk){
+      var bi = state.bulk.items.find(function(x){ return x.localId===t.dataset.itemLocalid; });
+      if(bi) bi[t.dataset.itemField] = t.value;
+    }
+    return true;
+  }
   function onChange(e){
     var t = e.target;
+    if(syncOtherInputForSelect(t)) return;
     if(t.id==='currency-select'){
       state.shop.currency = t.value;
       var idx = state.db.shops.findIndex(function(s){ return s.id===state.shop.id; });
@@ -1409,29 +1432,6 @@
     else if(t.id==='product-ip-select'){ state.productIp = t.value; rerender(); }
     else if(t.id==='product-show-archived'){ state.productShowArchived = t.checked; rerender(); }
     else if(t.dataset && t.dataset.productNotes){ saveShopData(); }
-    else if(t.classList && t.classList.contains('category-select')){
-      var wrap = t.closest('.form-field') || t.parentElement;
-      var otherEl = wrap ? wrap.querySelector('.other-input') : null;
-      if(otherEl) otherEl.style.display = (t.value==='__custom__') ? 'block' : 'none';
-      if(t.dataset && t.dataset.itemField && state.bulk){
-        var biCat = state.bulk.items.find(function(x){ return x.localId===t.dataset.itemLocalid; });
-        if(biCat) biCat[t.dataset.itemField] = t.value;
-      }
-    }
-    else if(t.classList && t.classList.contains('ip-select')){
-      var wrapIp = t.closest('.form-field') || t.parentElement;
-      var otherElIp = wrapIp ? wrapIp.querySelector('.other-input') : null;
-      if(otherElIp) otherElIp.style.display = (t.value==='__custom__') ? 'block' : 'none';
-      if(t.dataset && t.dataset.itemField && state.bulk){
-        var biIp = state.bulk.items.find(function(x){ return x.localId===t.dataset.itemLocalid; });
-        if(biIp) biIp[t.dataset.itemField] = t.value;
-      }
-    }
-    else if(t.classList && t.classList.contains('costtype-select')){
-      var wrap2 = t.closest('.form-field') || t.parentElement;
-      var otherEl2 = wrap2 ? wrap2.querySelector('.other-input') : null;
-      if(otherEl2) otherEl2.style.display = (t.value==='__custom__') ? 'block' : 'none';
-    }
     else if(t.id==='bulk-image-input'){ bulkAddImages(t.files); t.value=''; }
     else if(t.dataset && t.dataset.itemReplace){ bulkReplaceItemImage(t.dataset.itemReplace, t.files[0]); t.value=''; }
     else if(t.id==='product-image-input'){
@@ -2409,8 +2409,19 @@
       dispatch(el.dataset.action, el.dataset.id, el);
     });
     appEl.addEventListener('submit', onSubmit);
-    appEl.addEventListener('input', onInput);
+    appEl.addEventListener('input', function(e){ if(!syncOtherInputForSelect(e.target)) onInput(e); });
     appEl.addEventListener('change', onChange);
+    /* Belt-and-suspenders for the "+Other" selects: some in-app browsers
+       (Facebook/Instagram/TikTok webviews) and older Android WebViews don't
+       reliably fire 'change' or 'input' on <select>. 'focusout' fires when
+       the picker closes and reliably bubbles, so it catches those cases too. */
+    appEl.addEventListener('focusout', function(e){ syncOtherInputForSelect(e.target); });
+    appEl.addEventListener('click', function(e){
+      var t = e.target;
+      if(t && t.tagName==='SELECT' && (t.classList.contains('category-select')||t.classList.contains('ip-select')||t.classList.contains('costtype-select'))){
+        setTimeout(function(){ syncOtherInputForSelect(t); }, 250);
+      }
+    });
     appEl.addEventListener('keydown', function(e){
       if(e.key==='Enter' && e.target && e.target.tagName==='INPUT' && e.target.type!=='submit' && e.target.closest('form[data-form]')){
         e.preventDefault();
