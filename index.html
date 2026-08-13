@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
   :root{
     --bg:#FFF7FA;
@@ -499,19 +500,20 @@
   };
   var COST_TYPES = ['Shipping','Booth fees','Travel & hotel','Other business expenses'];
   var FX_TO_PHP = { PHP:1, USD:58, EUR:63, GBP:73, JPY:0.39, CAD:42, AUD:38 };
-  var LS_DB = 'goodsalley_db_v1';
-  var LS_SESSION = 'goodsalley_session_v1';
-  var LS_DATA_PREFIX = 'goodsalley_shopdata_v1_';
+  /* ---- Supabase project config ----
+     Fill these in from Settings > API in your Supabase project, then redeploy.
+     The anon/public key is safe to expose in client code — access is controlled
+     by the Row Level Security policies set up in the SQL migration. */
+  var SUPABASE_URL = 'https://YOUR-PROJECT-REF.supabase.co';
+  var SUPABASE_ANON_KEY = 'YOUR-ANON-PUBLIC-KEY';
+  var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   /* ================= state ================= */
   var state = {
     loaded:false,
-    storageOk:true,
     view:'auth',            // 'auth' | 'dashboard'
     authTab:'login',
     errorMsg:'', successMsg:'',
-    db:{ shops:[] },
-    session:null,           // {shopId}
     shop:null,               // current shop object (denormalized)
     data:{ products:[], sales:[], conventions:[], costs:[], feedback:[], stockLog:[], customCategories:[], customCostTypes:[] },
     sellerTab:'overview',
@@ -579,57 +581,63 @@
   function fmtDate(iso){ return new Date(iso).toLocaleDateString(undefined,{month:'short',day:'numeric'}); }
   function fmtDateTime(iso){ var d=new Date(iso); return d.toLocaleDateString(undefined,{month:'numeric',day:'numeric'})+', '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'}); }
 
-  /* ================= persistence (localStorage; falls back to in-memory) ================= */
-  function hasLS(){
-    try{
-      var t='__ga_test__'; window.localStorage.setItem(t,'1'); window.localStorage.removeItem(t); return true;
-    }catch(e){ return false; }
-  }
-  function lsGet(key){
-    try{ var raw = window.localStorage.getItem(key); return raw ? JSON.parse(raw) : null; }
-    catch(e){ return null; }
-  }
-  function lsSet(key, val){
-    try{ window.localStorage.setItem(key, JSON.stringify(val)); return true; }
-    catch(e){ return false; }
-  }
-  function lsRemove(key){ try{ window.localStorage.removeItem(key); }catch(e){} }
-
-  function loadDB(){
-    var db = lsGet(LS_DB);
-    state.db = db && db.shops ? db : { shops:[] };
-  }
-  function saveDB(){ lsSet(LS_DB, state.db); }
-
+  /* ================= persistence (Supabase — synced across devices/browsers) ================= */
   function defaultShopData(){
     return { products:[], sales:[], conventions:[], costs:[], feedback:[], stockLog:[], customCategories:[], customCostTypes:[] };
   }
+  function shopRowToShop(row){
+    return { id:row.id, shopName:row.shop_name, username:row.username, email:row.email, currency:row.currency, showcaseSlug:row.showcase_slug, createdAt:row.created_at };
+  }
+  function loadShopProfile(userId){
+    return sb.from('shops').select('*').eq('id', userId).maybeSingle().then(function(res){
+      if(res.error || !res.data) return null;
+      return shopRowToShop(res.data);
+    });
+  }
   function loadShopData(shopId){
-    var d = lsGet(LS_DATA_PREFIX+shopId);
-    if(!d) return defaultShopData();
-    if(!d.customCategories) d.customCategories=[];
-    if(!d.customCostTypes) d.customCostTypes=[];
-    return d;
+    return sb.from('shop_data').select('data').eq('shop_id', shopId).maybeSingle().then(function(res){
+      var d = Object.assign(defaultShopData(), (res.data && res.data.data) || {});
+      if(!d.customCategories) d.customCategories=[];
+      if(!d.customCostTypes) d.customCostTypes=[];
+      return d;
+    });
   }
+  // Writes are debounced so rapid edits (typing, qty +/-) don't fire a network
+  // request each time — the whole shop_data blob is upserted after a short pause.
+  var saveShopDataTimer = null;
   function saveShopData(){
-    if(!state.shop) return;
-    lsSet(LS_DATA_PREFIX+state.shop.id, state.data);
+    if(!state.shop) return Promise.resolve();
+    var shopId = state.shop.id;
+    if(saveShopDataTimer) clearTimeout(saveShopDataTimer);
+    return new Promise(function(resolve){
+      saveShopDataTimer = setTimeout(function(){
+        var snapshot = state.data;
+        sb.from('shop_data').update({ data: snapshot, updated_at: new Date().toISOString() }).eq('shop_id', shopId).then(function(){ resolve(); });
+      }, 500);
+    });
   }
-
+  // Persists edits to the shop's own profile row (shop name, currency).
+  function saveDB(){
+    if(!state.shop) return Promise.resolve();
+    return sb.from('shops').update({
+      shop_name: state.shop.shopName,
+      currency: state.shop.currency
+    }).eq('id', state.shop.id);
+  }
   function loadSession(){
-    var sess = lsGet(LS_SESSION);
-    if(sess && sess.shopId){
-      var shop = state.db.shops.find(function(s){ return s.id===sess.shopId; });
-      if(shop){
-        state.session = sess;
+    return sb.auth.getSession().then(function(res){
+      var session = res.data && res.data.session;
+      if(!session) return;
+      return loadShopProfile(session.user.id).then(function(shop){
+        if(!shop) return;
         state.shop = shop;
-        state.data = loadShopData(shop.id);
-        state.view = 'dashboard';
-      }
-    }
+        return loadShopData(shop.id).then(function(d){
+          state.data = d;
+          state.view = 'dashboard';
+        });
+      });
+    });
   }
-  function saveSession(){ lsSet(LS_SESSION, state.session); }
-  function clearSession(){ state.session=null; lsRemove(LS_SESSION); }
 
   /* ================= data lookups ================= */
   function productById(id){ return state.data.products.find(function(p){ return p.id===id; }); }
@@ -760,52 +768,72 @@
       .sort(function(a,b){ return b.qty-a.qty; }).slice(0, limit||5);
   }
 
-  /* ================= auth ================= */
+  /* ================= auth (Supabase Auth) ================= */
   function handleSignup(fd){
     var shopName=(fd.get('shopName')||'').trim();
     var username=(fd.get('username')||'').trim().toLowerCase();
     var email=(fd.get('email')||'').trim().toLowerCase();
     var password=fd.get('password')||'';
-    if(!shopName || !username || !email || password.length<4){
-      state.errorMsg='Please fill in every field (password needs 4+ characters).'; rerender(); return;
+    if(!shopName || !username || !email || password.length<6){
+      state.errorMsg='Please fill in every field (password needs 6+ characters).'; rerender(); return;
     }
-    if(state.db.shops.some(function(s){ return s.username===username; })){
-      state.errorMsg='That username is already taken.'; rerender(); return;
+    if(!/^[a-z0-9_.-]+$/.test(username)){
+      state.errorMsg='Username can only contain letters, numbers, dots, dashes, or underscores.'; rerender(); return;
     }
-    if(state.db.shops.some(function(s){ return s.email===email; })){
-      state.errorMsg='An account with that email already exists — try logging in.'; rerender(); return;
-    }
-    var shop = {
-      id: uid('shop'), shopName:shopName, username:username, email:email, password:password,
-      currency:'PHP', showcaseSlug: username, createdAt: new Date().toISOString()
-    };
-    state.db.shops.push(shop);
-    saveDB();
-    state.shop = shop;
-    state.data = defaultShopData();
-    saveShopData();
-    state.session = {shopId: shop.id};
-    saveSession();
-    state.view='dashboard'; state.sellerTab='overview'; state.errorMsg='';
-    rerender();
+    state.errorMsg=''; state.busy=true; rerender();
+    sb.rpc('is_username_taken', {uname:username}).then(function(res){
+      if(res.data===true) throw {friendly:'That username is already taken.'};
+      return sb.auth.signUp({
+        email:email, password:password,
+        options:{ data:{ username:username, shop_name:shopName } }
+      });
+    }).then(function(res){
+      if(res.error) throw {friendly: res.error.message};
+      if(!res.data.session){
+        // Email confirmation is turned on for this Supabase project.
+        throw {friendly:'Account created — check your email to confirm, then log in.', isNotice:true};
+      }
+      return loadShopProfile(res.data.user.id).then(function(shop){
+        state.shop = shop;
+        state.data = defaultShopData();
+        state.view='dashboard'; state.sellerTab='overview'; state.errorMsg=''; state.busy=false;
+        rerender();
+      });
+    }).catch(function(err){
+      state.busy=false;
+      if(err && err.isNotice){ state.successMsg=err.friendly; state.authTab='login'; }
+      else { state.errorMsg = (err&&err.friendly) || 'Something went wrong creating your shop. Please try again.'; }
+      rerender();
+    });
   }
   function handleLogin(fd){
     var idf=(fd.get('identifier')||'').trim().toLowerCase();
     var password=fd.get('password')||'';
     if(!idf || !password){ state.errorMsg='Enter your username/email and password.'; rerender(); return; }
-    var shop = state.db.shops.find(function(s){
-      return (s.username===idf || s.email===idf) && s.password===password;
+    state.errorMsg=''; state.busy=true; rerender();
+    var emailLookup = idf.indexOf('@')>-1 ? Promise.resolve(idf) : sb.rpc('email_for_username',{uname:idf}).then(function(res){ return res.data; });
+    emailLookup.then(function(email){
+      if(!email) throw {friendly:'No matching account. Check your details and try again.'};
+      return sb.auth.signInWithPassword({email:email, password:password});
+    }).then(function(res){
+      if(res.error) throw {friendly:'No matching account. Check your details and try again.'};
+      return loadShopProfile(res.data.user.id);
+    }).then(function(shop){
+      if(!shop) throw {friendly:'Signed in, but no shop profile was found for this account.'};
+      state.shop = shop;
+      return loadShopData(shop.id);
+    }).then(function(d){
+      state.data = d;
+      state.view='dashboard'; state.sellerTab='overview'; state.errorMsg=''; state.busy=false;
+      rerender();
+    }).catch(function(err){
+      state.busy=false;
+      state.errorMsg = (err&&err.friendly) || 'No matching account. Check your details and try again.';
+      rerender();
     });
-    if(!shop){ state.errorMsg='No matching account. Check your details and try again.'; rerender(); return; }
-    state.shop = shop;
-    state.data = loadShopData(shop.id);
-    state.session = {shopId: shop.id};
-    saveSession();
-    state.view='dashboard'; state.sellerTab='overview'; state.errorMsg='';
-    rerender();
   }
   function handleLogout(){
-    clearSession();
+    sb.auth.signOut();
     state.shop=null; state.data=defaultShopData();
     state.view='auth'; state.authTab='login'; state.modal=null;
     rerender();
@@ -816,8 +844,6 @@
     if(!shopName){ state.errorMsg='Shop name cannot be empty.'; rerender(); return; }
     state.shop.shopName = shopName;
     state.shop.currency = currency;
-    var idx = state.db.shops.findIndex(function(s){ return s.id===state.shop.id; });
-    if(idx>-1) state.db.shops[idx]=state.shop;
     saveDB();
     state.modal=null; state.errorMsg=''; state.successMsg='Account updated.';
     rerender();
@@ -1349,7 +1375,7 @@
   /* ================= event dispatch ================= */
   function dispatch(action, id, btn){
     switch(action){
-      case 'auth-tab': state.authTab = btn.dataset.tab; state.errorMsg=''; break;
+      case 'auth-tab': state.authTab = btn.dataset.tab; state.errorMsg=''; state.successMsg=''; break;
       case 'seller-tab': state.sellerTab = btn.dataset.tab; state.modal=null; state.errorMsg=''; state.successMsg=''; break;
       case 'logout': handleLogout(); return;
       case 'close-modal': state.modal=null; state.errorMsg=''; state.productImageDraft=null; state.bulk=null; break;
@@ -1438,8 +1464,8 @@
     e.preventDefault();
     var type = form.dataset.form;
     var fd = new FormData(form);
-    if(type==='signup') handleSignup(fd);
-    else if(type==='login') handleLogin(fd);
+    if(type==='signup'){ if(!state.busy) handleSignup(fd); }
+    else if(type==='login'){ if(!state.busy) handleLogin(fd); }
     else if(type==='account-form') handleAccountForm(fd);
     else if(type==='product-form') handleProductForm(fd);
     else if(type==='convention-form') handleConventionForm(fd);
@@ -1466,8 +1492,6 @@
     var t = e.target;
     if(t.id==='currency-select'){
       state.shop.currency = t.value;
-      var idx = state.db.shops.findIndex(function(s){ return s.id===state.shop.id; });
-      if(idx>-1) state.db.shops[idx]=state.shop;
       saveDB(); rerender();
     } else if(t.id==='restore-file-input'){ restoreBackup(t.files[0]); }
     else if(t.id==='product-stock-filter'){ state.productStockFilter = t.value; rerender(); }
@@ -1526,16 +1550,18 @@
         '<div class="form-field"><label>Username or email</label><input name="identifier" required/></div>' +
         '<div class="form-field"><label>Password</label>' + passwordField('login-password','password') + '</div>' +
         (state.errorMsg?'<div class="form-error">'+escapeHtml(state.errorMsg)+'</div>':'') +
-        '<button class="btn btn-primary btn-block" type="submit">Log in</button>' +
+        (state.successMsg?'<div class="form-success">'+escapeHtml(state.successMsg)+'</div>':'') +
+        '<button class="btn btn-primary btn-block" type="submit" '+(state.busy?'disabled':'')+'>'+(state.busy?'Logging in…':'Log in')+'</button>' +
       '</form>';
     } else {
       body = '<form data-form="signup">' +
         '<div class="form-field"><label>Shop name</label><input name="shopName" required/></div>' +
         '<div class="form-field"><label>Username</label><input name="username" required/></div>' +
         '<div class="form-field"><label>Email</label><input type="email" name="email" required/></div>' +
-        '<div class="form-field"><label>Password</label>' + passwordField('signup-password','password',' minlength="4"') + '</div>' +
+        '<div class="form-field"><label>Password</label>' + passwordField('signup-password','password',' minlength="6"') + '</div>' +
         (state.errorMsg?'<div class="form-error">'+escapeHtml(state.errorMsg)+'</div>':'') +
-        '<button class="btn btn-primary btn-block" type="submit">Create my shop</button>' +
+        (state.successMsg?'<div class="form-success">'+escapeHtml(state.successMsg)+'</div>':'') +
+        '<button class="btn btn-primary btn-block" type="submit" '+(state.busy?'disabled':'')+'>'+(state.busy?'Creating…':'Create my shop')+'</button>' +
       '</form>';
     }
     return '<div class="auth-shell"><div class="auth-card">' +
@@ -1545,8 +1571,7 @@
         '<button class="tab '+(state.authTab==='login'?'active':'')+'" data-action="auth-tab" data-tab="login">Log in</button>' +
         '<button class="tab '+(state.authTab==='signup'?'active':'')+'" data-action="auth-tab" data-tab="signup">Create shop</button>' +
       '</div>' + body +
-      (state.storageOk ? '<p class="storage-note">Your login and shop data are saved in this browser, so you\'ll stay signed in next time you open this page.</p>'
-        : '<p class="storage-note">⚠️ This browser is blocking local storage, so data won\'t be saved between visits.</p>') +
+      '<p class="storage-note">Your login and shop data are saved to the cloud, so you can pick up right where you left off on any device or browser.</p>' +
     '</div></div>';
   }
 
@@ -2536,11 +2561,23 @@
       }
     });
 
-    state.storageOk = hasLS();
-    loadDB();
-    loadSession();
-    state.loaded = true;
-    rerender();
+    loadSession().then(function(){
+      state.loaded = true;
+      rerender();
+    }).catch(function(){
+      state.loaded = true;
+      rerender();
+    });
+
+    // Keep the app in sync if the user logs out (or their session expires)
+    // in another tab on this same browser.
+    sb.auth.onAuthStateChange(function(event){
+      if(event==='SIGNED_OUT' && state.shop){
+        state.shop=null; state.data=defaultShopData();
+        state.view='auth'; state.authTab='login'; state.modal=null;
+        rerender();
+      }
+    });
   }
 
   document.addEventListener('DOMContentLoaded', init);
