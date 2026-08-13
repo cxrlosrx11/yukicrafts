@@ -504,8 +504,8 @@
      Fill these in from Settings > API in your Supabase project, then redeploy.
      The anon/public key is safe to expose in client code — access is controlled
      by the Row Level Security policies set up in the SQL migration. */
-  var SUPABASE_URL = 'https://namrailslnyuemihyrhj.supabase.co';
-  var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5hbXJhaWxzbG55dWVtaWh5cmhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1ODM4MDksImV4cCI6MjEwMjE1OTgwOX0.8muwQvMeSQvjXQL0aRoLHlNJtM8bHBEd6R82-LTbIXI';
+  var SUPABASE_URL = 'https://YOUR-PROJECT-REF.supabase.co';
+  var SUPABASE_ANON_KEY = 'YOUR-ANON-PUBLIC-KEY';
   var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   /* ================= state ================= */
@@ -683,9 +683,7 @@
     var opts = allIpOptions();
     var sel = selected || '';
     var html = '';
-    if(opts.length){
-      html += '<option value="" '+(sel===''?'selected':'')+'>No IP / series</option>';
-    }
+    html += '<option value="" '+(sel===''?'selected':'')+'>No IP / series</option>';
     html += opts.map(function(c){
       return '<option value="'+escapeHtml(c)+'" '+(sel===c?'selected':'')+'>'+escapeHtml(c)+'</option>';
     }).join('');
