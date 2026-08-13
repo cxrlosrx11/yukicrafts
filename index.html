@@ -80,6 +80,7 @@
   .shell{display:grid;grid-template-columns:250px 1fr;flex:1;min-height:100vh;transition:grid-template-columns .22s ease;}
   .shell.nav-closed{grid-template-columns:0 1fr;}
   .shell.nav-closed .sidebar{display:none;}
+  .shell.nav-closed .main{padding-top:76px;}
   .sidebar{border-right:1px solid var(--border);padding:20px 14px;background:var(--sidebar);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;}
   .nav-fab{position:fixed;top:16px;left:16px;z-index:1002;width:42px;height:42px;border-radius:12px;border:1px solid var(--border);background:#fff;color:var(--accent-dark);font-size:17px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);}
   .nav-collapse-btn{border:none;background:transparent;color:var(--muted);font-size:16px;padding:6px;border-radius:8px;flex:none;margin-left:auto;}
@@ -464,7 +465,7 @@
     .nav-backdrop{display:block;position:fixed;inset:0;background:rgba(20,10,15,0.42);z-index:1000;}
     .nav-fab{top:14px;left:14px;}
     .side-link{white-space:nowrap;}
-    .main{padding:20px 16px 50px 66px;}
+    .main{padding:20px 16px 50px;}
     .ov-grid{grid-template-columns:1fr;}
     .stat-grid{grid-template-columns:1fr 1fr;}
     .two-col{grid-template-columns:1fr;}
@@ -489,7 +490,7 @@
   }
 
   @media (max-width:480px){
-    .main{padding:16px 12px 50px 60px;}
+    .main{padding:16px 12px 50px;}
     .page-head{gap:10px;margin-bottom:16px;}
     .page-head h1{font-size:22px;}
     .currency-box{padding:7px 10px;}
@@ -524,8 +525,8 @@
      Fill these in from Settings > API in your Supabase project, then redeploy.
      The anon/public key is safe to expose in client code — access is controlled
      by the Row Level Security policies set up in the SQL migration. */
-  var SUPABASE_URL = 'https://namrailslnyuemihyrhj.supabase.co';
-  var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5hbXJhaWxzbG55dWVtaWh5cmhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1ODM4MDksImV4cCI6MjEwMjE1OTgwOX0.8muwQvMeSQvjXQL0aRoLHlNJtM8bHBEd6R82-LTbIXI';
+  var SUPABASE_URL = 'https://YOUR-PROJECT-REF.supabase.co';
+  var SUPABASE_ANON_KEY = 'YOUR-ANON-PUBLIC-KEY';
   var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   /* ================= state ================= */
