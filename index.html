@@ -77,8 +77,14 @@
   .tab.active{background:#fff;color:var(--accent-dark);box-shadow:0 2px 8px rgba(0,0,0,0.06);}
 
   /* ---------- APP SHELL ---------- */
-  .shell{display:grid;grid-template-columns:250px 1fr;flex:1;min-height:100vh;}
+  .shell{display:grid;grid-template-columns:250px 1fr;flex:1;min-height:100vh;transition:grid-template-columns .22s ease;}
+  .shell.nav-closed{grid-template-columns:0 1fr;}
+  .shell.nav-closed .sidebar{display:none;}
   .sidebar{border-right:1px solid var(--border);padding:20px 14px;background:var(--sidebar);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;}
+  .nav-fab{position:fixed;top:16px;left:16px;z-index:1002;width:42px;height:42px;border-radius:12px;border:1px solid var(--border);background:#fff;color:var(--accent-dark);font-size:17px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);}
+  .nav-collapse-btn{border:none;background:transparent;color:var(--muted);font-size:16px;padding:6px;border-radius:8px;flex:none;margin-left:auto;}
+  .nav-collapse-btn:hover{background:var(--accent-softer);color:var(--accent-dark);}
+  .nav-backdrop{display:none;}
   .brand{display:flex;align-items:center;gap:9px;padding:6px 8px 20px;}
   .brand-logo{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent-dark));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14px;flex:none;}
   .brand-text{font-weight:800;font-size:17px;}
@@ -452,13 +458,13 @@
 
   @media (max-width:920px){
     .shell{grid-template-columns:1fr;}
-    .sidebar{position:static;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;overflow-x:auto;}
-    .sidebar-spacer{display:none;}
-    .side-section{display:none;}
-    .brand{padding:6px 10px;}
-    .sell-btn,.profile-row,.signout-btn{display:none;}
+    .shell.nav-closed .sidebar{display:flex;} /* JS controls visibility via transform below, not display, on mobile */
+    .sidebar{position:fixed;top:0;left:0;height:100vh;width:250px;max-width:82vw;z-index:1001;flex-direction:column;flex-wrap:nowrap;overflow-x:hidden;transform:translateX(-100%);transition:transform .22s ease;box-shadow:0 10px 40px rgba(42,22,32,0.22);}
+    .shell.nav-open .sidebar{transform:translateX(0);}
+    .nav-backdrop{display:block;position:fixed;inset:0;background:rgba(20,10,15,0.42);z-index:1000;}
+    .nav-fab{top:14px;left:14px;}
     .side-link{white-space:nowrap;}
-    .main{padding:20px 16px 50px;}
+    .main{padding:20px 16px 50px 66px;}
     .ov-grid{grid-template-columns:1fr;}
     .stat-grid{grid-template-columns:1fr 1fr;}
     .two-col{grid-template-columns:1fr;}
@@ -480,6 +486,20 @@
     .pos-body{grid-template-columns:1fr;}
     .pos-cart{position:static;}
     .pos-topbar{flex-direction:column;}
+  }
+
+  @media (max-width:480px){
+    .main{padding:16px 12px 50px 60px;}
+    .page-head{gap:10px;margin-bottom:16px;}
+    .page-head h1{font-size:22px;}
+    .currency-box{padding:7px 10px;}
+    .stat-grid{grid-template-columns:1fr;}
+    .quick-actions{grid-template-columns:1fr;}
+    .plist-stats{grid-template-columns:1fr;}
+    .share-grid{grid-template-columns:1fr;}
+    .table-row{grid-template-columns:1.3fr 1fr 1fr;font-size:12px;padding:10px 12px;}
+    .modal{border-radius:14px;}
+    .sidebar{width:86vw;}
   }
 </style>
 </head>
@@ -504,8 +524,8 @@
      Fill these in from Settings > API in your Supabase project, then redeploy.
      The anon/public key is safe to expose in client code — access is controlled
      by the Row Level Security policies set up in the SQL migration. */
-  var SUPABASE_URL = 'https://namrailslnyuemihyrhj.supabase.co';
-  var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5hbXJhaWxzbG55dWVtaWh5cmhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1ODM4MDksImV4cCI6MjEwMjE1OTgwOX0.8muwQvMeSQvjXQL0aRoLHlNJtM8bHBEd6R82-LTbIXI';
+  var SUPABASE_URL = 'https://YOUR-PROJECT-REF.supabase.co';
+  var SUPABASE_ANON_KEY = 'YOUR-ANON-PUBLIC-KEY';
   var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   /* ================= state ================= */
@@ -529,7 +549,8 @@
     productStockFilter:'All', productShowArchived:false,
     bulk:null,
     bundlePriceOverride:null,
-    pwVisible:{}
+    pwVisible:{},
+    navOpen:(typeof window==='undefined' || window.innerWidth>920)
   };
 
   /* ================= helpers ================= */
@@ -1379,7 +1400,12 @@
   function dispatch(action, id, btn){
     switch(action){
       case 'auth-tab': state.authTab = btn.dataset.tab; state.errorMsg=''; state.successMsg=''; break;
-      case 'seller-tab': state.sellerTab = btn.dataset.tab; state.modal=null; state.errorMsg=''; state.successMsg=''; break;
+      case 'seller-tab':
+        state.sellerTab = btn.dataset.tab; state.modal=null; state.errorMsg=''; state.successMsg='';
+        if(window.innerWidth<=920) state.navOpen=false;
+        break;
+      case 'toggle-nav': state.navOpen = !state.navOpen; break;
+      case 'close-nav': state.navOpen = false; break;
       case 'logout': handleLogout(); return;
       case 'close-modal': state.modal=null; state.errorMsg=''; state.productImageDraft=null; state.bulk=null; break;
       case 'open-account': state.modal={type:'account'}; state.errorMsg=''; break;
@@ -1593,7 +1619,10 @@
     else if(state.sellerTab==='import') content = renderImportTab();
     else if(state.sellerTab==='backup') content = renderBackupTab();
     else if(state.sellerTab==='pos') content = renderPosTab();
-    return '<div class="shell">' + renderSidebar() + '<main class="main">'+content+'</main></div>' + renderModal();
+    var shellClass = 'shell ' + (state.navOpen?'nav-open':'nav-closed');
+    var fab = !state.navOpen ? '<button class="nav-fab" data-action="toggle-nav" title="Show menu">☰</button>' : '';
+    var backdrop = state.navOpen ? '<div class="nav-backdrop" data-action="close-nav"></div>' : '';
+    return fab + '<div class="'+shellClass+'">' + renderSidebar() + backdrop + '<main class="main">'+content+'</main></div>' + renderModal();
   }
 
   function renderSidebar(){
@@ -1603,7 +1632,9 @@
     }
     return '' +
     '<aside class="sidebar">' +
-      '<div class="brand"><div class="brand-logo">CY</div><div class="brand-text">Crafts ni Yukiii</div></div>' +
+      '<div class="brand"><div class="brand-logo">CY</div><div class="brand-text">Crafts ni Yukiii</div>' +
+        '<button class="nav-collapse-btn" data-action="toggle-nav" title="Hide navbar">✕</button>' +
+      '</div>' +
       '<div class="side-section">Shop</div>' +
       link('overview','▦','Overview') +
       link('products','◈','Products') +
