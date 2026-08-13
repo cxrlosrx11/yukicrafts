@@ -400,6 +400,55 @@
   .rca-total-label{color:var(--muted);font-size:13.5px;}
   .rca-total-value{font-size:22px;font-weight:800;}
 
+  /* ---------- on-site sales / quick sale & restock (POS) ---------- */
+  .pos-shell{display:flex;flex-direction:column;}
+  .pos-topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:18px;}
+  .pos-subtitle{color:var(--muted);font-size:14px;margin:0;max-width:560px;}
+  .pos-mode-pill{background:var(--accent);color:#fff;font-weight:800;font-size:13px;padding:9px 18px;border-radius:999px;white-space:nowrap;border:none;flex:none;}
+  .pos-toolbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px;}
+  .pos-toggle{display:flex;gap:6px;background:var(--accent-softer);border-radius:999px;padding:4px;flex:none;}
+  .pos-toggle button{border:none;background:transparent;padding:9px 18px;border-radius:999px;font-weight:700;font-size:13.5px;color:var(--muted);display:flex;align-items:center;gap:6px;}
+  .pos-toggle button.active{background:var(--accent);color:#fff;box-shadow:0 4px 12px rgba(236,72,153,.3);}
+  .pos-search-wrap{position:relative;flex:1;min-width:220px;max-width:420px;}
+  .pos-search-wrap input{width:100%;border:1px solid var(--border);border-radius:10px;padding:10px 12px 10px 34px;font-size:14px;background:#fff;color:var(--ink);}
+  .pos-search-wrap .si{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;}
+  .pos-body{display:grid;grid-template-columns:1fr 340px;gap:22px;align-items:flex-start;}
+  .pos-count{color:var(--muted);font-size:12.5px;font-weight:700;margin-bottom:10px;text-transform:uppercase;letter-spacing:.03em;}
+  .pos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px;}
+  .pos-card{border:1px solid var(--border);border-radius:14px;background:#fff;overflow:hidden;text-align:left;padding:0;transition:box-shadow .15s ease, transform .1s ease;}
+  .pos-card:hover:not(:disabled){box-shadow:var(--shadow);transform:translateY(-1px);}
+  .pos-card:disabled{opacity:.5;cursor:not-allowed;}
+  .pos-card-media{width:100%;aspect-ratio:1/1;background:var(--accent-softer);display:flex;align-items:center;justify-content:center;font-size:34px;overflow:hidden;}
+  .pos-card-media img{width:100%;height:100%;object-fit:cover;display:block;}
+  .pos-card-body{padding:12px 13px 14px;}
+  .pos-card-cat{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:2px;}
+  .pos-card-name{font-weight:700;font-size:14.5px;display:block;margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .pos-card-bottom{display:flex;justify-content:space-between;align-items:baseline;gap:6px;}
+  .pos-card-price{font-weight:800;font-size:14.5px;}
+  .pos-card-stock{font-size:11px;color:var(--muted);font-weight:700;text-align:right;}
+  .pos-card-stock.restock{color:var(--accent-dark);}
+  .pos-card-stock.low{color:var(--red);}
+  .pos-cart{border:1px solid var(--border);border-radius:16px;background:#fff;padding:20px;position:sticky;top:20px;}
+  .pos-cart h3{font-size:17px;margin-bottom:14px;}
+  .pos-cart-empty{color:var(--muted);font-size:13.5px;text-align:center;padding:26px 10px;}
+  .pos-cart-list{display:flex;flex-direction:column;gap:12px;margin-bottom:16px;max-height:360px;overflow-y:auto;}
+  .pos-cart-item{display:flex;align-items:center;gap:9px;}
+  .pos-cart-item-media{width:38px;height:38px;border-radius:8px;background:var(--accent-softer);display:flex;align-items:center;justify-content:center;font-size:17px;overflow:hidden;flex:none;}
+  .pos-cart-item-media img{width:100%;height:100%;object-fit:cover;}
+  .pos-cart-item-meta{flex:1;min-width:0;}
+  .pos-cart-item-name{font-weight:700;font-size:13.5px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .pos-cart-item-price{font-size:11.5px;color:var(--muted);}
+  .pos-cart-item-qty{display:flex;align-items:center;gap:6px;flex:none;}
+  .pos-qty-btn{width:23px;height:23px;border-radius:7px;border:1px solid var(--border);background:var(--accent-softer);color:var(--accent-dark);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;flex:none;padding:0;line-height:1;}
+  .pos-qty-val{min-width:16px;text-align:center;font-weight:700;font-size:13px;}
+  .pos-cart-remove{border:none;background:transparent;color:var(--muted);font-size:12.5px;flex:none;padding:2px;}
+  .pos-summary{border-top:1px solid var(--border);padding-top:14px;margin-top:4px;}
+  .pos-summary-row{display:flex;justify-content:space-between;align-items:center;font-size:14px;margin-bottom:10px;gap:10px;}
+  .pos-summary-row.total{font-weight:800;font-size:16px;margin-bottom:16px;}
+  .pos-discount-input{width:100px;border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-size:13.5px;text-align:right;color:var(--ink);}
+  .pos-restock-count-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+  .pos-restock-count-row .v{font-size:20px;font-weight:800;}
+
   @media (max-width:920px){
     .shell{grid-template-columns:1fr;}
     .sidebar{position:static;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;overflow-x:auto;}
@@ -427,6 +476,9 @@
     .bulk-item-fields{grid-template-columns:1fr;}
     .modal{top:12px;left:12px;right:12px;transform:none;width:auto;max-width:none;max-height:calc(100vh - 24px);}
     .wizard-modal{width:auto;}
+    .pos-body{grid-template-columns:1fr;}
+    .pos-cart{position:static;}
+    .pos-topbar{flex-direction:column;}
   }
 </style>
 </head>
@@ -466,8 +518,9 @@
     modal:null,
     productSearch:'', productCategory:'All', productIp:'All',
     ovIp:'All',
-    qsCart:[], qsProductId:'', qsQty:1,
-    rsProductId:'', rsQty:1,
+    qsCart:[], qsDiscount:0,
+    rsCart:[],
+    posMode:'sell', posCategory:'All', posSearch:'',
     importPreview:null,
     productImageDraft:null, productImageBusy:false,
     selectedProductIds:[],
@@ -1115,44 +1168,69 @@
     return toPHP(sum, cur);
   }
 
-  /* ================= quick sale / quick restock ================= */
+  /* ================= on-site sales (POS: quick sale / quick restock) ================= */
   function openQuickSale(){
-    state.qsCart=[]; state.qsProductId = state.data.products[0] ? state.data.products[0].id : '';
-    state.qsQty=1; state.errorMsg='';
-    state.modal={type:'quick-sale'};
+    state.sellerTab='pos'; state.posMode='sell'; state.posCategory='All'; state.posSearch='';
+    state.qsCart=[]; state.qsDiscount=0; state.errorMsg=''; state.successMsg=''; state.modal=null;
   }
   function openQuickRestock(presetId){
-    state.rsProductId = presetId || (state.data.products[0] ? state.data.products[0].id : '');
-    state.rsQty=1; state.errorMsg='';
-    state.modal={type:'quick-restock'};
+    state.sellerTab='pos'; state.posMode='restock'; state.posCategory='All'; state.posSearch='';
+    state.rsCart=[]; state.errorMsg=''; state.successMsg=''; state.modal=null;
+    if(presetId){
+      var preset = productById(presetId);
+      if(preset) state.rsCart.push({productId:preset.id, name:preset.name, image:preset.image, category:preset.category, qty:1});
+    }
   }
-  function qsAddItem(){
-    var p = productById(state.qsProductId);
+  function posSetMode(mode){
+    if(mode!=='sell' && mode!=='restock') return;
+    state.posMode = mode; state.posCategory='All'; state.posSearch=''; state.errorMsg=''; state.successMsg='';
+  }
+  function posCart(){ return state.posMode==='restock' ? state.rsCart : state.qsCart; }
+  function posAddToCart(productId){
+    var p = productById(productId);
     if(!p) return;
-    var qty = Math.max(1, parseInt(state.qsQty,10)||1);
-    var already = state.qsCart.filter(function(l){ return l.productId===p.id; }).reduce(function(a,l){ return a+l.qty; },0);
-    var available = p.stock - already;
-    if(available<=0){ state.errorMsg='No more stock available for "'+p.name+'".'; rerender(); return; }
-    qty = Math.min(qty, available);
-    var existing = state.qsCart.find(function(l){ return l.productId===p.id; });
-    if(existing) existing.qty += qty;
-    else state.qsCart.push({productId:p.id, name:p.name, price:p.price, cost:p.cost, qty:qty});
-    state.errorMsg='';
-    rerender();
+    state.successMsg='';
+    var cart = posCart();
+    var existing = cart.find(function(l){ return l.productId===p.id; });
+    if(state.posMode==='sell'){
+      if(p.archived) return;
+      var already = existing ? existing.qty : 0;
+      if(already>=p.stock){ state.errorMsg='No more stock available for "'+p.name+'".'; return; }
+      if(existing) existing.qty += 1;
+      else cart.push({productId:p.id, name:p.name, price:p.price, cost:p.cost, image:p.image, category:p.category, qty:1});
+      state.errorMsg='';
+    } else {
+      if(existing) existing.qty += 1;
+      else cart.push({productId:p.id, name:p.name, image:p.image, category:p.category, qty:1});
+      state.errorMsg='';
+    }
   }
-  function qsRemoveItem(productId){
-    state.qsCart = state.qsCart.filter(function(l){ return l.productId!==productId; });
-    rerender();
+  function posCartQtyChange(productId, delta){
+    var cart = posCart();
+    var line = cart.find(function(l){ return l.productId===productId; });
+    if(!line) return;
+    var newQty = line.qty + delta;
+    if(newQty<1){ posRemoveFromCart(productId); return; }
+    if(state.posMode==='sell'){
+      var p = productById(productId);
+      if(p && newQty>p.stock){ state.errorMsg='Only '+p.stock+' in stock for "'+p.name+'".'; return; }
+    }
+    line.qty = newQty; state.errorMsg='';
+  }
+  function posRemoveFromCart(productId){
+    if(state.posMode==='sell') state.qsCart = state.qsCart.filter(function(l){ return l.productId!==productId; });
+    else state.rsCart = state.rsCart.filter(function(l){ return l.productId!==productId; });
   }
   function cashFriendlyTotal(total){
     var whole = Math.round(total*100)/100;
     if(Number.isInteger(whole) && whole % 10 === 5) return whole - 5;
     return whole;
   }
-  function qsComplete(){
-    if(!state.qsCart.length){ state.errorMsg='Add at least one item first.'; rerender(); return; }
+  function posCheckout(){
+    if(!state.qsCart.length){ state.errorMsg='Add at least one item first.'; return; }
     var rawTotal = state.qsCart.reduce(function(a,l){ return a+l.price*l.qty; },0);
-    var total = cashFriendlyTotal(rawTotal);
+    var discount = Math.max(0, parseFloat(state.qsDiscount)||0);
+    var total = Math.max(0, cashFriendlyTotal(rawTotal) - discount);
     var sale = {id:uid('sale'), date:new Date().toISOString(), items:state.qsCart.slice(), total:total, status:'Completed'};
     sale.items.forEach(function(it){
       var p = productById(it.productId);
@@ -1163,32 +1241,19 @@
     });
     state.data.sales.unshift(sale);
     saveShopData();
-    state.qsCart=[]; state.modal=null; state.errorMsg='';
-    rerender();
+    state.qsCart=[]; state.qsDiscount=0; state.errorMsg=''; state.successMsg='Sale recorded!';
   }
-  function qsQuickComplete(){
-    var p = productById(state.qsProductId);
-    if(!p){ state.errorMsg='Choose a product first.'; rerender(); return; }
-    if(!p.stock || p.stock<=0){ state.errorMsg='This product is out of stock.'; rerender(); return; }
-    var qty = Math.min(Math.max(1, parseInt(state.qsQty,10)||1), 5, p.stock);
-    var total = cashFriendlyTotal(p.price*qty);
-    var sale = {id:uid('sale'), date:new Date().toISOString(), items:[{productId:p.id, name:p.name, price:p.price, cost:p.cost, qty:qty}], total:total, status:'Completed'};
-    p.stock = Math.max(0, p.stock - qty);
-    logStock(p.id, p.name, -qty, p.stock);
-    state.data.sales.unshift(sale);
+  function posRecordRestock(){
+    if(!state.rsCart.length){ state.errorMsg='Add at least one item first.'; return; }
+    state.rsCart.forEach(function(l){
+      var p = productById(l.productId);
+      if(p){
+        p.stock += l.qty;
+        logStock(p.id, p.name, l.qty, p.stock);
+      }
+    });
     saveShopData();
-    state.qsCart=[]; state.qsQty=1; state.modal=null; state.errorMsg='';
-    rerender();
-  }
-  function rsConfirm(){
-    var p = productById(state.rsProductId);
-    var qty = Math.max(1, parseInt(state.rsQty,10)||1);
-    if(!p){ state.errorMsg='Choose a product first.'; rerender(); return; }
-    p.stock += qty;
-    logStock(p.id, p.name, qty, p.stock);
-    saveShopData();
-    state.modal=null; state.errorMsg='';
-    rerender();
+    state.rsCart=[]; state.errorMsg=''; state.successMsg='Stock updated!';
   }
   function undoSale(id){
     var s = state.data.sales.find(function(x){ return x.id===id; });
@@ -1334,11 +1399,14 @@
       case 'undo-sale': undoSale(id); break;
       case 'open-quick-sale': openQuickSale(); break;
       case 'open-quick-restock': openQuickRestock(id); break;
-      case 'qs-add-item': qsAddItem(); return;
-      case 'qs-remove-item': qsRemoveItem(id); return;
-      case 'qs-complete': qsComplete(); return;
-      case 'qs-quick-complete': qsQuickComplete(); return;
-      case 'rs-confirm': rsConfirm(); return;
+      case 'pos-mode': posSetMode(btn.dataset.mode); break;
+      case 'pos-category': state.posCategory = btn.dataset.cat; break;
+      case 'pos-card-add': posAddToCart(id); break;
+      case 'pos-qty-inc': posCartQtyChange(id, 1); break;
+      case 'pos-qty-dec': posCartQtyChange(id, -1); break;
+      case 'pos-cart-remove': posRemoveFromCart(id); break;
+      case 'pos-checkout': posCheckout(); break;
+      case 'pos-record-restock': posRecordRestock(); break;
       case 'product-cat-filter': state.productCategory = btn.dataset.cat; break;
       case 'product-ip-filter': state.productIp = btn.dataset.ip; break;
       case 'ov-ip-filter': state.ovIp = btn.dataset.ip; break;
@@ -1383,7 +1451,8 @@
   function onInput(e){
     var t = e.target;
     if(t.id==='product-search-input'){ state.productSearch=t.value; rerender(); }
-    else if(t.id==='qs-qty-input'){ state.qsQty=t.value; }
+    else if(t.id==='pos-search-input'){ state.posSearch=t.value; rerender(); }
+    else if(t.id==='pos-discount-input'){ state.qsDiscount=t.value; rerender(); }
     else if(t.dataset && t.dataset.itemField && state.bulk){
       var bi = state.bulk.items.find(function(x){ return x.localId===t.dataset.itemLocalid; });
       if(bi) bi[t.dataset.itemField] = t.value;
@@ -1393,45 +1462,41 @@
       if(np) np.notes = t.value;
     }
   }
-  /* Toggles the "+Other" free-text box next to a category/ip/cost-type select.
-     Some browsers (in-app browsers like Facebook/Instagram/TikTok, and some
-     older Android WebViews) don't reliably fire a native 'change' event on
-     <select>, so this is called from several different event types to make
-     sure it still runs. It's safe to call repeatedly / redundantly. */
-  function syncOtherInputForSelect(t){
-    if(!t || !t.classList) return false;
-    var isCat = t.classList.contains('category-select');
-    var isIp = t.classList.contains('ip-select');
-    var isCost = t.classList.contains('costtype-select');
-    if(!isCat && !isIp && !isCost) return false;
-    var wrap = t.closest('.form-field') || t.parentElement;
-    var otherEl = (wrap && wrap.querySelector('.other-input')) || t.nextElementSibling;
-    if(otherEl && otherEl.classList && otherEl.classList.contains('other-input')){
-      otherEl.style.display = (t.value==='__custom__') ? 'block' : 'none';
-    }
-    if((isCat || isIp) && t.dataset && t.dataset.itemField && state.bulk){
-      var bi = state.bulk.items.find(function(x){ return x.localId===t.dataset.itemLocalid; });
-      if(bi) bi[t.dataset.itemField] = t.value;
-    }
-    return true;
-  }
   function onChange(e){
     var t = e.target;
-    if(syncOtherInputForSelect(t)) return;
     if(t.id==='currency-select'){
       state.shop.currency = t.value;
       var idx = state.db.shops.findIndex(function(s){ return s.id===state.shop.id; });
       if(idx>-1) state.db.shops[idx]=state.shop;
       saveDB(); rerender();
-    } else if(t.id==='qs-product-select'){ state.qsProductId = t.value; state.qsQty=1; rerender(); }
-    else if(t.id==='qs-qty-select'){ state.qsQty = t.value; rerender(); }
-    else if(t.id==='rs-product-select'){ state.rsProductId = t.value; }
-    else if(t.id==='rs-qty-select'){ state.rsQty = t.value; rerender(); }
-    else if(t.id==='restore-file-input'){ restoreBackup(t.files[0]); }
+    } else if(t.id==='restore-file-input'){ restoreBackup(t.files[0]); }
     else if(t.id==='product-stock-filter'){ state.productStockFilter = t.value; rerender(); }
     else if(t.id==='product-ip-select'){ state.productIp = t.value; rerender(); }
     else if(t.id==='product-show-archived'){ state.productShowArchived = t.checked; rerender(); }
     else if(t.dataset && t.dataset.productNotes){ saveShopData(); }
+    else if(t.classList && t.classList.contains('category-select')){
+      var wrap = t.closest('.form-field') || t.parentElement;
+      var otherEl = wrap ? wrap.querySelector('.other-input') : null;
+      if(otherEl) otherEl.style.display = (t.value==='__custom__') ? 'block' : 'none';
+      if(t.dataset && t.dataset.itemField && state.bulk){
+        var biCat = state.bulk.items.find(function(x){ return x.localId===t.dataset.itemLocalid; });
+        if(biCat) biCat[t.dataset.itemField] = t.value;
+      }
+    }
+    else if(t.classList && t.classList.contains('ip-select')){
+      var wrapIp = t.closest('.form-field') || t.parentElement;
+      var otherElIp = wrapIp ? wrapIp.querySelector('.other-input') : null;
+      if(otherElIp) otherElIp.style.display = (t.value==='__custom__') ? 'block' : 'none';
+      if(t.dataset && t.dataset.itemField && state.bulk){
+        var biIp = state.bulk.items.find(function(x){ return x.localId===t.dataset.itemLocalid; });
+        if(biIp) biIp[t.dataset.itemField] = t.value;
+      }
+    }
+    else if(t.classList && t.classList.contains('costtype-select')){
+      var wrap2 = t.closest('.form-field') || t.parentElement;
+      var otherEl2 = wrap2 ? wrap2.querySelector('.other-input') : null;
+      if(otherEl2) otherEl2.style.display = (t.value==='__custom__') ? 'block' : 'none';
+    }
     else if(t.id==='bulk-image-input'){ bulkAddImages(t.files); t.value=''; }
     else if(t.dataset && t.dataset.itemReplace){ bulkReplaceItemImage(t.dataset.itemReplace, t.files[0]); t.value=''; }
     else if(t.id==='product-image-input'){
@@ -1499,6 +1564,7 @@
     else if(state.sellerTab==='feedback') content = renderFeedbackTab();
     else if(state.sellerTab==='import') content = renderImportTab();
     else if(state.sellerTab==='backup') content = renderBackupTab();
+    else if(state.sellerTab==='pos') content = renderPosTab();
     return '<div class="shell">' + renderSidebar() + '<main class="main">'+content+'</main></div>' + renderModal();
   }
 
@@ -1994,8 +2060,6 @@
     else if(state.modal.type==='product') inner=renderProductModal();
     else if(state.modal.type==='convention') inner=renderConventionModal();
     else if(state.modal.type==='expense') inner=renderExpenseModal();
-    else if(state.modal.type==='quick-sale') inner=renderQuickSaleModal();
-    else if(state.modal.type==='quick-restock') inner=renderQuickRestockModal();
     else if(state.modal.type==='add-method') return '<div class="modal-overlay" data-action="close-modal"></div><div class="modal method-modal">'+renderAddMethodModal()+'</div>';
     else if(state.modal.type==='bulk-wizard') return '<div class="modal-overlay" data-action="close-modal"></div><div class="modal wizard-modal">'+renderBulkWizardModal()+'</div>';
     else if(state.modal.type==='batch-edit') inner=renderBatchEditModal();
@@ -2331,55 +2395,110 @@
     '</form></div>';
   }
 
-  function renderQuickSaleModal(){
-    var products = state.data.products.filter(function(p){ return !p.archived; });
-    if(!products.length){
-      return '<div class="modal-head"><h3>Quick sale</h3><button class="icon-btn" data-action="close-modal">✕</button></div>' +
-      '<div class="modal-body"><div class="empty-box">You don\'t have any products yet. Add one from the Products page first.</div></div>';
+  function renderPosTab(){
+    var mode = state.posMode==='restock' ? 'restock' : 'sell';
+    var allProducts = state.data.products.filter(function(p){ return mode==='sell' ? !p.archived : true; });
+    var cats = allCategories().filter(function(c){
+      return allProducts.some(function(p){ return p.category===c; });
+    });
+    if(!allProducts.length){
+      return '<div class="pos-shell"><div class="pos-topbar"><div><h2>On-site sales</h2>' +
+        '<p class="pos-subtitle">Tap items to add to the cart; checking out records sales; switch to restock mode to log incoming stock.</p></div></div>' +
+        '<div class="empty-box">You don\'t have any products yet. Add one from the Products page first.</div></div>';
     }
-    var p = productById(state.qsProductId) || products[0];
-    if(!p) p = products[0];
-    var maxQty = Math.max(1, Math.min(5, p.stock||0));
-    var outOfStock = !p.stock || p.stock<=0;
-    var qty = Math.min(Math.max(1, parseInt(state.qsQty,10)||1), Math.max(1,maxQty));
-    var rawTotal = p.price*qty;
-    var lineTotal = cashFriendlyTotal(rawTotal);
-    var rounded = lineTotal!==rawTotal;
-    return '<div class="modal-head"><h3>Quick sale</h3><button class="icon-btn" data-action="close-modal">✕</button></div>' +
-    '<div class="modal-body">' +
-      '<div class="form-row" style="align-items:flex-end;">' +
-        '<div class="form-field"><label>Product</label><select id="qs-product-select">' +
-          products.map(function(pp){ return '<option value="'+pp.id+'" '+(p.id===pp.id?'selected':'')+'>'+escapeHtml(pp.name)+' ('+pp.stock+' left)</option>'; }).join('') +
-        '</select></div>' +
-        '<div class="form-field"><label>Qty</label><select id="qs-qty-select">' +
-          [1,2,3,4,5].map(function(n){ return '<option value="'+n+'" '+(qty===n?'selected':'')+' '+(n>p.stock?'disabled':'')+'>'+n+'</option>'; }).join('') +
-        '</select></div>' +
-      '</div>' +
-      (outOfStock ? '<div class="form-error">This product is out of stock.</div>' : '') +
-      (state.errorMsg?'<div class="form-error">'+escapeHtml(state.errorMsg)+'</div>':'') +
-      (rounded ? '<div class="hint small" style="text-align:right;margin-bottom:2px;">Subtotal '+money(rawTotal)+' · rounded down '+money(rawTotal-lineTotal)+'</div>' : '') +
-      '<div class="qs-total"><span>Total</span><span>'+money(lineTotal)+'</span></div>' +
-      '<button class="btn btn-primary btn-block" style="margin-top:14px;" data-action="qs-quick-complete" '+(outOfStock?'disabled':'')+'>⚡ Quick sale</button>' +
-    '</div>';
-  }
+    var search = (state.posSearch||'').toLowerCase();
+    var filtered = allProducts.filter(function(p){
+      if(state.posCategory && state.posCategory!=='All' && p.category!==state.posCategory) return false;
+      if(search && p.name.toLowerCase().indexOf(search)===-1 && p.category.toLowerCase().indexOf(search)===-1) return false;
+      return true;
+    });
+    var cart = mode==='sell' ? state.qsCart : state.rsCart;
 
-  function renderQuickRestockModal(){
-    var products = state.data.products;
-    if(!products.length){
-      return '<div class="modal-head"><h3>Quick restock</h3><button class="icon-btn" data-action="close-modal">✕</button></div>' +
-      '<div class="modal-body"><div class="empty-box">You don\'t have any products yet. Add one from the Products page first.</div></div>';
+    var cardsHtml = filtered.length ? filtered.map(function(p){
+      var media = p.image ? '<img src="'+p.image+'" alt="'+escapeHtml(p.name)+'"/>' : (p.emoji||CATEGORY_EMOJI[p.category]||'🩷');
+      var outOfStock = mode==='sell' && (!p.stock || p.stock<=0);
+      var stockLabel = mode==='sell' ? (outOfStock?'Out of stock':'Stock '+p.stock) : ('Restock · stock '+p.stock);
+      return '<button type="button" class="pos-card" data-action="pos-card-add" data-id="'+p.id+'" '+(outOfStock?'disabled':'')+'>' +
+        '<div class="pos-card-media">'+media+'</div>' +
+        '<div class="pos-card-body">' +
+          '<div class="pos-card-cat">'+escapeHtml(p.category)+'</div>' +
+          '<span class="pos-card-name">'+escapeHtml(p.name)+'</span>' +
+          '<div class="pos-card-bottom">' +
+            '<span class="pos-card-price">'+money(p.price)+'</span>' +
+            '<span class="pos-card-stock '+(mode==='restock'?'restock':(outOfStock?'low':''))+'">'+stockLabel+'</span>' +
+          '</div>' +
+        '</div>' +
+      '</button>';
+    }).join('') : '<div class="empty-box">No items match your search.</div>';
+
+    var cartHtml;
+    if(!cart.length){
+      cartHtml = '<div class="pos-cart-empty">Tap items to add to the '+(mode==='sell'?'cart':'restock cart')+'</div>';
+    } else {
+      cartHtml = '<div class="pos-cart-list">' + cart.map(function(l){
+        var lp = productById(l.productId);
+        var media = (lp&&lp.image) ? '<img src="'+lp.image+'" alt="'+escapeHtml(l.name)+'"/>' : ((lp&&lp.emoji)||CATEGORY_EMOJI[l.category]||'🩷');
+        return '<div class="pos-cart-item">' +
+          '<div class="pos-cart-item-media">'+media+'</div>' +
+          '<div class="pos-cart-item-meta"><span class="pos-cart-item-name">'+escapeHtml(l.name)+'</span>' +
+            (mode==='sell' ? '<span class="pos-cart-item-price">'+money(l.price)+' each</span>' : '') +
+          '</div>' +
+          '<div class="pos-cart-item-qty">' +
+            '<button type="button" class="pos-qty-btn" data-action="pos-qty-dec" data-id="'+l.productId+'">−</button>' +
+            '<span class="pos-qty-val">'+l.qty+'</span>' +
+            '<button type="button" class="pos-qty-btn" data-action="pos-qty-inc" data-id="'+l.productId+'">+</button>' +
+          '</div>' +
+          '<button type="button" class="pos-cart-remove" data-action="pos-cart-remove" data-id="'+l.productId+'">✕</button>' +
+        '</div>';
+      }).join('') + '</div>';
     }
-    var qty = Math.min(Math.max(1, parseInt(state.rsQty,10)||1), 5);
-    return '<div class="modal-head"><h3>Quick restock</h3><button class="icon-btn" data-action="close-modal">✕</button></div>' +
-    '<div class="modal-body">' +
-      '<div class="form-field"><label>Product</label><select id="rs-product-select">' +
-        products.map(function(p){ return '<option value="'+p.id+'" '+(state.rsProductId===p.id?'selected':'')+'>'+escapeHtml(p.name)+' (currently '+p.stock+')</option>'; }).join('') +
-      '</select></div>' +
-      '<div class="form-field"><label>Add stock</label><select id="rs-qty-select">' +
-        [1,2,3,4,5].map(function(n){ return '<option value="'+n+'" '+(qty===n?'selected':'')+'>'+n+'</option>'; }).join('') +
-      '</select></div>' +
-      (state.errorMsg?'<div class="form-error">'+escapeHtml(state.errorMsg)+'</div>':'') +
-      '<button class="btn btn-primary btn-block" data-action="rs-confirm">Add to stock</button>' +
+
+    var summaryHtml;
+    if(mode==='sell'){
+      var rawTotal = cart.reduce(function(a,l){ return a+l.price*l.qty; },0);
+      var discount = Math.max(0, parseFloat(state.qsDiscount)||0);
+      var total = Math.max(0, cashFriendlyTotal(rawTotal) - discount);
+      summaryHtml = '<div class="pos-summary">' +
+        '<div class="pos-summary-row"><span>Subtotal</span><span>'+money(rawTotal)+'</span></div>' +
+        '<div class="pos-summary-row"><span>Order discount</span><input id="pos-discount-input" class="pos-discount-input" type="number" min="0" step="0.01" value="'+escapeHtml(String(state.qsDiscount||0))+'"/></div>' +
+        '<div class="pos-summary-row total"><span>Amount due</span><span>'+money(total)+'</span></div>' +
+        (state.errorMsg?'<div class="form-error">'+escapeHtml(state.errorMsg)+'</div>':'') +
+        (state.successMsg?'<div class="form-success">'+escapeHtml(state.successMsg)+'</div>':'') +
+        '<button type="button" class="btn btn-primary btn-block" data-action="pos-checkout" '+(cart.length?'':'disabled')+'>🛒 Checkout</button>' +
+      '</div>';
+    } else {
+      var count = cart.reduce(function(a,l){ return a+l.qty; },0);
+      summaryHtml = '<div class="pos-summary">' +
+        '<div class="pos-restock-count-row"><span>Restock count</span><span class="v">'+count+' pcs</span></div>' +
+        (state.errorMsg?'<div class="form-error">'+escapeHtml(state.errorMsg)+'</div>':'') +
+        (state.successMsg?'<div class="form-success">'+escapeHtml(state.successMsg)+'</div>':'') +
+        '<button type="button" class="btn btn-primary btn-block" data-action="pos-record-restock" '+(cart.length?'':'disabled')+'>📦 Record restock</button>' +
+      '</div>';
+    }
+
+    var catChips = '<div class="chips">' +
+      '<button type="button" class="chip '+(state.posCategory==='All'?'active':'')+'" data-action="pos-category" data-cat="All">All items</button>' +
+      cats.map(function(c){ return '<button type="button" class="chip '+(state.posCategory===c?'active':'')+'" data-action="pos-category" data-cat="'+escapeHtml(c)+'">'+escapeHtml(c)+'</button>'; }).join('') +
+    '</div>';
+
+    return '<div class="pos-shell">' +
+      '<div class="pos-topbar">' +
+        '<div><h2>On-site sales</h2>' +
+          '<p class="pos-subtitle">Tap items to add to the cart; checking out records sales; switch to restock mode to log incoming stock.</p></div>' +
+        '<span class="pos-mode-pill">'+(mode==='sell'?'Sale mode':'Restock mode')+'</span>' +
+      '</div>' +
+      '<div class="pos-toolbar">' +
+        '<div class="pos-toggle">' +
+          '<button type="button" class="'+(mode==='sell'?'active':'')+'" data-action="pos-mode" data-mode="sell">🛒 Sell</button>' +
+          '<button type="button" class="'+(mode==='restock'?'active':'')+'" data-action="pos-mode" data-mode="restock">📦 Restock</button>' +
+        '</div>' +
+        '<div class="pos-search-wrap"><span class="si">🔍</span><input id="pos-search-input" placeholder="Search by product name or category" value="'+escapeHtml(state.posSearch||'')+'"/></div>' +
+      '</div>' +
+      catChips +
+      '<div class="pos-body">' +
+        '<div><div class="pos-count">'+filtered.length+' items</div><div class="pos-grid">'+cardsHtml+'</div></div>' +
+        '<div class="pos-cart"><h3>'+(mode==='sell'?'Selected items':'Restock list')+'</h3>'+cartHtml+summaryHtml+'</div>' +
+      '</div>' +
     '</div>';
   }
 
@@ -2409,19 +2528,8 @@
       dispatch(el.dataset.action, el.dataset.id, el);
     });
     appEl.addEventListener('submit', onSubmit);
-    appEl.addEventListener('input', function(e){ if(!syncOtherInputForSelect(e.target)) onInput(e); });
+    appEl.addEventListener('input', onInput);
     appEl.addEventListener('change', onChange);
-    /* Belt-and-suspenders for the "+Other" selects: some in-app browsers
-       (Facebook/Instagram/TikTok webviews) and older Android WebViews don't
-       reliably fire 'change' or 'input' on <select>. 'focusout' fires when
-       the picker closes and reliably bubbles, so it catches those cases too. */
-    appEl.addEventListener('focusout', function(e){ syncOtherInputForSelect(e.target); });
-    appEl.addEventListener('click', function(e){
-      var t = e.target;
-      if(t && t.tagName==='SELECT' && (t.classList.contains('category-select')||t.classList.contains('ip-select')||t.classList.contains('costtype-select'))){
-        setTimeout(function(){ syncOtherInputForSelect(t); }, 250);
-      }
-    });
     appEl.addEventListener('keydown', function(e){
       if(e.key==='Enter' && e.target && e.target.tagName==='INPUT' && e.target.type!=='submit' && e.target.closest('form[data-form]')){
         e.preventDefault();
