@@ -235,6 +235,8 @@
   .sales-table .table-row.sales-row:hover{background:var(--accent-softer);}
   .table-more{color:var(--muted);font-weight:700;}
   .cell-truncate{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
+  .col-center{text-align:center;}
+  .col-right{text-align:right;}
   .payment-pill{display:inline-flex;align-items:center;background:var(--accent-softer);color:var(--accent-dark);border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;}
   .sale-detail-meta{display:flex;flex-direction:column;gap:2px;margin-bottom:16px;}
   .sale-detail-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);font-size:13.5px;}
@@ -574,8 +576,8 @@
      Fill these in from Settings > API in your Supabase project, then redeploy.
      The anon/public key is safe to expose in client code — access is controlled
      by the Row Level Security policies set up in the SQL migration. */
-  var SUPABASE_URL = 'https://namrailslnyuemihyrhj.supabase.co';
-  var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5hbXJhaWxzbG55dWVtaWh5cmhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1ODM4MDksImV4cCI6MjEwMjE1OTgwOX0.8muwQvMeSQvjXQL0aRoLHlNJtM8bHBEd6R82-LTbIXI';
+  var SUPABASE_URL = 'https://YOUR-PROJECT-REF.supabase.co';
+  var SUPABASE_ANON_KEY = 'YOUR-ANON-PUBLIC-KEY';
   var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   /* ================= state ================= */
@@ -1962,7 +1964,7 @@
     return '' +
     pageHead('Sales', 'Every sale recorded through Quick Sale. Click a row to see the full details.') +
     (orders.length ? '<div class="table sales-table">' +
-      '<div class="table-row table-head"><span class="cell-truncate">Sale</span><span class="cell-truncate">Items</span><span class="cell-truncate">Date</span><span class="cell-truncate">Payment</span><span class="cell-truncate">Status</span><span class="cell-truncate">Total</span><span></span></div>' +
+      '<div class="table-row table-head"><span class="cell-truncate">Sale</span><span class="cell-truncate">Items</span><span class="cell-truncate">Date</span><span class="cell-truncate col-center">Payment</span><span class="cell-truncate col-center">Status</span><span class="cell-truncate col-right">Total</span><span></span></div>' +
       orders.map(function(o){
         var firstItem = o.items[0];
         var itemsPlain = firstItem
@@ -1973,9 +1975,9 @@
           '<span class="cell-truncate">#'+o.id.slice(-6)+'</span>' +
           '<span class="cell-truncate" title="'+escapeHtml(itemsFullList)+'">'+escapeHtml(itemsPlain)+'</span>' +
           '<span class="cell-truncate">'+fmtDate(o.date)+'</span>' +
-          '<span><span class="payment-pill">'+escapeHtml(o.paymentMethod||'Cash')+'</span></span>' +
-          '<span><span class="status-pill completed">'+escapeHtml(o.status||'Completed')+'</span></span>' +
-          '<span>'+money(o.total)+'</span>' +
+          '<span class="col-center"><span class="payment-pill">'+escapeHtml(o.paymentMethod||'Cash')+'</span></span>' +
+          '<span class="col-center"><span class="status-pill completed">'+escapeHtml(o.status||'Completed')+'</span></span>' +
+          '<span class="col-right">'+money(o.total)+'</span>' +
           '<span class="row-actions"><button class="btn btn-ghost btn-sm" data-action="undo-sale" data-id="'+o.id+'" title="Permanently deletes this sale and restores stock">↺ Undo sale</button></span>' +
         '</div>';
       }).join('') +
