@@ -229,6 +229,15 @@
   .table-row{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr 1fr auto;gap:10px;padding:12px 16px;align-items:center;font-size:13.5px;border-bottom:1px solid var(--border);}
   .table-row:last-child{border-bottom:none;}
   .table-head{background:var(--accent-softer);font-weight:800;color:var(--accent-dark);font-size:11.5px;text-transform:uppercase;letter-spacing:.02em;}
+  .sales-table .table-row{grid-template-columns:.9fr 1.5fr .95fr .85fr .8fr .85fr auto;}
+  .sales-table .table-row.sales-row{cursor:pointer;transition:background .12s ease;}
+  .sales-table .table-row.sales-row:hover{background:var(--accent-softer);}
+  .table-more{color:var(--muted);font-weight:700;}
+  .payment-pill{display:inline-flex;align-items:center;background:var(--accent-softer);color:var(--accent-dark);border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;}
+  .sale-detail-meta{display:flex;flex-direction:column;gap:2px;margin-bottom:16px;}
+  .sale-detail-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);font-size:13.5px;}
+  .sale-detail-row:last-child{border-bottom:none;}
+  .sale-detail-subhead{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:0 0 4px;}
   .row-actions{display:flex;gap:6px;justify-content:flex-end;}
   .status-pill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;display:inline-block;}
   .status-pill.completed{background:#E9F8F1;color:var(--green);}
@@ -563,8 +572,8 @@
      Fill these in from Settings > API in your Supabase project, then redeploy.
      The anon/public key is safe to expose in client code — access is controlled
      by the Row Level Security policies set up in the SQL migration. */
-  var SUPABASE_URL = 'https://namrailslnyuemihyrhj.supabase.co';
-  var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5hbXJhaWxzbG55dWVtaWh5cmhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1ODM4MDksImV4cCI6MjEwMjE1OTgwOX0.8muwQvMeSQvjXQL0aRoLHlNJtM8bHBEd6R82-LTbIXI';
+  var SUPABASE_URL = 'https://YOUR-PROJECT-REF.supabase.co';
+  var SUPABASE_ANON_KEY = 'YOUR-ANON-PUBLIC-KEY';
   var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   /* ================= state ================= */
@@ -1362,6 +1371,7 @@
       if(p) p.stock += it.qty;
     });
     state.data.sales = state.data.sales.filter(function(x){ return x.id!==id; });
+    if(state.modal && state.modal.type==='sale-detail' && state.modal.id===id) state.modal=null;
     saveShopData(); rerender();
   }
 
@@ -1495,6 +1505,7 @@
       case 'add-expense-open': state.modal={type:'expense'}; state.errorMsg=''; break;
       case 'delete-expense': deleteExpense(id); break;
       case 'undo-sale': undoSale(id); break;
+      case 'view-sale': state.modal={type:'sale-detail', id:id}; break;
       case 'open-quick-sale': openQuickSale(); break;
       case 'open-quick-restock': openQuickRestock(id); break;
       case 'pos-mode': posSetMode(btn.dataset.mode); break;
@@ -1947,20 +1958,51 @@
   function renderSalesTab(){
     var orders = state.data.sales;
     return '' +
-    pageHead('Sales', 'Every sale recorded through Quick Sale.') +
-    (orders.length ? '<div class="table">' +
-      '<div class="table-row table-head"><span>Sale</span><span>Items</span><span>Date</span><span>Status</span><span>Total</span><span></span></div>' +
+    pageHead('Sales', 'Every sale recorded through Quick Sale. Click a row to see the full details.') +
+    (orders.length ? '<div class="table sales-table">' +
+      '<div class="table-row table-head"><span>Sale</span><span>Items</span><span>Date</span><span>Payment</span><span>Status</span><span>Total</span><span></span></div>' +
       orders.map(function(o){
-        return '<div class="table-row">' +
+        var firstItem = o.items[0];
+        var itemsLabel = firstItem
+          ? firstItem.qty+'× '+escapeHtml(firstItem.name) + (o.items.length>1 ? ' <span class="table-more">+'+(o.items.length-1)+' more</span>' : '')
+          : '—';
+        return '<div class="table-row sales-row" data-action="view-sale" data-id="'+o.id+'" title="Click to view sale details">' +
           '<span>#'+o.id.slice(-6)+'</span>' +
-          '<span>'+o.items.map(function(it){ return it.qty+'× '+escapeHtml(it.name); }).join(', ')+'</span>' +
+          '<span>'+itemsLabel+'</span>' +
           '<span>'+fmtDate(o.date)+'</span>' +
+          '<span><span class="payment-pill">'+escapeHtml(o.paymentMethod||'Cash')+'</span></span>' +
           '<span><span class="status-pill completed">'+escapeHtml(o.status||'Completed')+'</span></span>' +
           '<span>'+money(o.total)+'</span>' +
           '<span class="row-actions"><button class="btn btn-ghost btn-sm" data-action="undo-sale" data-id="'+o.id+'" title="Permanently deletes this sale and restores stock">↺ Undo sale</button></span>' +
         '</div>';
       }).join('') +
     '</div>' : '<div class="empty-box">No sales yet. Use <strong>Quick sale</strong> from the Overview page to record one.</div>');
+  }
+
+  function renderSaleDetailModal(){
+    var o = state.data.sales.find(function(s){ return s.id===state.modal.id; });
+    if(!o){
+      return '<div class="modal-head"><h3>Sale details</h3><button class="icon-btn" data-action="close-modal">✕</button></div>' +
+        '<div class="modal-body"><p class="hint">This sale could not be found — it may have already been undone.</p></div>';
+    }
+    var itemsHtml = o.items.map(function(it){
+      return '<div class="qs-line"><span>'+it.qty+'× '+escapeHtml(it.name)+'</span><span>'+money(it.price*it.qty)+'</span></div>';
+    }).join('');
+    return '<div class="modal-head"><h3>Sale #'+o.id.slice(-6)+'</h3><button class="icon-btn" data-action="close-modal">✕</button></div>' +
+    '<div class="modal-body">' +
+      '<div class="sale-detail-meta">' +
+        '<div class="sale-detail-row"><span>Date</span><span>'+fmtDate(o.date)+'</span></div>' +
+        '<div class="sale-detail-row"><span>Status</span><span class="status-pill completed">'+escapeHtml(o.status||'Completed')+'</span></div>' +
+        '<div class="sale-detail-row"><span>Mode of payment</span><span class="payment-pill">'+escapeHtml(o.paymentMethod||'Cash')+'</span></div>' +
+      '</div>' +
+      '<div class="sale-detail-subhead">Items</div>' +
+      itemsHtml +
+      '<div class="qs-total"><span>Total</span><span>'+money(o.total)+'</span></div>' +
+      '<div class="modal-actions">' +
+        '<button type="button" class="btn btn-ghost" data-action="close-modal">Close</button>' +
+        '<button type="button" class="btn btn-dark" data-action="undo-sale" data-id="'+o.id+'" title="Permanently deletes this sale and restores stock">↺ Undo sale</button>' +
+      '</div>' +
+    '</div>';
   }
 
   /* ================= render: costs ================= */
@@ -2164,6 +2206,7 @@
     else if(state.modal.type==='bulk-wizard') return '<div class="modal-overlay" data-action="close-modal"></div><div class="modal wizard-modal">'+renderBulkWizardModal()+'</div>';
     else if(state.modal.type==='batch-edit') inner=renderBatchEditModal();
     else if(state.modal.type==='bundle') inner=renderBundleModal();
+    else if(state.modal.type==='sale-detail') inner=renderSaleDetailModal();
     return '<div class="modal-overlay" data-action="close-modal"></div><div class="modal">'+inner+'</div>';
   }
 
