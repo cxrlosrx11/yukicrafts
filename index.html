@@ -482,6 +482,15 @@
   .pos-discount-input{width:100px;border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-size:13.5px;text-align:right;color:var(--ink);}
   .pos-restock-count-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
   .pos-restock-count-row .v{font-size:20px;font-weight:800;}
+  .pos-payment-row{align-items:center;}
+  .pos-payment-dropdown{position:relative;}
+  .pos-payment-btn{border:1px solid var(--border);background:#fff;color:var(--ink);border-radius:8px;padding:7px 12px;font-weight:700;font-size:13.5px;display:flex;align-items:center;gap:6px;}
+  .pos-payment-btn:hover{border-color:var(--accent);}
+  .pos-payment-caret{font-size:11px;color:var(--muted);}
+  .pos-payment-menu{position:absolute;right:0;top:calc(100% + 6px);background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);padding:6px;display:flex;flex-direction:column;gap:2px;min-width:130px;z-index:20;}
+  .pos-payment-menu-item{border:none;background:transparent;text-align:left;padding:8px 10px;border-radius:7px;font-size:13.5px;font-weight:600;color:var(--ink);}
+  .pos-payment-menu-item:hover{background:var(--accent-softer);}
+  .pos-payment-menu-item.active{background:var(--accent-soft);color:var(--accent-dark);font-weight:800;}
 
   @media (max-width:920px){
     .shell{grid-template-columns:1fr;}
@@ -554,8 +563,8 @@
      Fill these in from Settings > API in your Supabase project, then redeploy.
      The anon/public key is safe to expose in client code — access is controlled
      by the Row Level Security policies set up in the SQL migration. */
-  var SUPABASE_URL = 'https://namrailslnyuemihyrhj.supabase.co';
-  var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5hbXJhaWxzbG55dWVtaWh5cmhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1ODM4MDksImV4cCI6MjEwMjE1OTgwOX0.8muwQvMeSQvjXQL0aRoLHlNJtM8bHBEd6R82-LTbIXI';
+  var SUPABASE_URL = 'https://YOUR-PROJECT-REF.supabase.co';
+  var SUPABASE_ANON_KEY = 'YOUR-ANON-PUBLIC-KEY';
   var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   /* ================= state ================= */
@@ -570,7 +579,7 @@
     modal:null,
     productSearch:'', productCategory:'All', productIp:'All',
     ovIp:'All',
-    qsCart:[], qsDiscount:0,
+    qsCart:[], qsDiscount:0, qsPaymentMethod:'Cash', qsPaymentMenuOpen:false,
     rsCart:[],
     posMode:'sell', posCategory:'All', posSearch:'',
     importPreview:null,
@@ -1315,7 +1324,7 @@
     var totalQty = bulkDiscountQty(state.qsCart);
     var discount = Math.max(0, parseFloat(state.qsDiscount)||0);
     var total = Math.max(0, cashFriendlyTotal(rawTotal, totalQty) - discount);
-    var sale = {id:uid('sale'), date:new Date().toISOString(), items:state.qsCart.slice(), total:total, status:'Completed'};
+    var sale = {id:uid('sale'), date:new Date().toISOString(), items:state.qsCart.slice(), total:total, status:'Completed', paymentMethod:state.qsPaymentMethod||'Cash'};
     sale.items.forEach(function(it){
       var p = productById(it.productId);
       if(p){
@@ -1325,7 +1334,7 @@
     });
     state.data.sales.unshift(sale);
     saveShopData();
-    state.qsCart=[]; state.qsDiscount=0; state.errorMsg=''; state.successMsg='Sale recorded!';
+    state.qsCart=[]; state.qsDiscount=0; state.qsPaymentMethod='Cash'; state.qsPaymentMenuOpen=false; state.errorMsg=''; state.successMsg='Sale recorded!';
   }
   function posRecordRestock(){
     if(!state.rsCart.length){ state.errorMsg='Add at least one item first.'; return; }
@@ -1495,6 +1504,8 @@
       case 'pos-qty-dec': posCartQtyChange(id, -1); break;
       case 'pos-cart-remove': posRemoveFromCart(id); break;
       case 'pos-checkout': posCheckout(); break;
+      case 'pos-payment-toggle': state.qsPaymentMenuOpen = !state.qsPaymentMenuOpen; break;
+      case 'pos-payment-select': state.qsPaymentMethod = btn.dataset.method; state.qsPaymentMenuOpen = false; break;
       case 'pos-record-restock': posRecordRestock(); break;
       case 'product-cat-filter': state.productCategory = btn.dataset.cat; break;
       case 'product-ip-filter': state.productIp = btn.dataset.ip; break;
@@ -2554,6 +2565,14 @@
         (qtyDiscount>0 ? '<div class="pos-summary-row"><span>Bulk discount (every 3 Pins)</span><span>-'+money(qtyDiscount)+'</span></div>' : '') +
         '<div class="pos-summary-row"><span>Order discount</span><input id="pos-discount-input" class="pos-discount-input" type="number" min="0" step="0.01" value="'+escapeHtml(String(state.qsDiscount||0))+'"/></div>' +
         '<div class="pos-summary-row total"><span>Amount due</span><span>'+money(total)+'</span></div>' +
+        '<div class="pos-summary-row pos-payment-row"><span>Mode of payment</span>' +
+          '<div class="pos-payment-dropdown">' +
+            '<button type="button" class="pos-payment-btn" data-action="pos-payment-toggle">'+escapeHtml(state.qsPaymentMethod||'Cash')+' <span class="pos-payment-caret">▾</span></button>' +
+            (state.qsPaymentMenuOpen ? '<div class="pos-payment-menu">' + ['Cash','GCash','GoTyme','Maya'].map(function(m){
+              return '<button type="button" class="pos-payment-menu-item'+(state.qsPaymentMethod===m?' active':'')+'" data-action="pos-payment-select" data-method="'+m+'">'+m+'</button>';
+            }).join('') + '</div>' : '') +
+          '</div>' +
+        '</div>' +
         (state.errorMsg?'<div class="form-error">'+escapeHtml(state.errorMsg)+'</div>':'') +
         (state.successMsg?'<div class="form-success">'+escapeHtml(state.successMsg)+'</div>':'') +
         '<button type="button" class="btn btn-primary btn-block" data-action="pos-checkout" '+(cart.length?'':'disabled')+'>🛒 Checkout</button>' +
@@ -2615,7 +2634,12 @@
     appEl = document.getElementById('app');
     appEl.addEventListener('click', function(e){
       var el = e.target.closest('[data-action]');
-      if(!el) return;
+      if(!el){
+        if(state.qsPaymentMenuOpen && !e.target.closest('.pos-payment-dropdown')){
+          state.qsPaymentMenuOpen = false; rerender();
+        }
+        return;
+      }
       e.preventDefault();
       dispatch(el.dataset.action, el.dataset.id, el);
     });
