@@ -401,8 +401,8 @@
   .cat-group-head{display:flex;align-items:baseline;gap:8px;margin-bottom:12px;}
   .cat-group-head h3{font-size:16px;}
   .cat-group-count{font-size:12.5px;color:var(--muted);font-weight:700;}
-  .ov-product-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
-  .ov-product-card{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#fff;}
+  .ov-product-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;}
+  .ov-product-card{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#fff;min-width:0;}
   .ov-product-media{height:110px;background:var(--accent-softer);display:flex;align-items:center;justify-content:center;font-size:34px;overflow:hidden;}
   .ov-product-media img{width:100%;height:100%;object-fit:cover;display:block;}
   .ov-product-body{padding:10px 12px 12px;}
@@ -497,7 +497,7 @@
     .two-col{grid-template-columns:1fr;}
     .quick-actions{grid-template-columns:1fr 1fr;}
     .plist-stats{grid-template-columns:1fr 1fr;}
-    .ov-product-grid{grid-template-columns:repeat(2,1fr);}
+    .ov-product-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
     .plist-grid{grid-template-columns:repeat(2,1fr);}
     .stock-grid{grid-template-columns:1fr;}
     .method-grid{grid-template-columns:1fr;}
@@ -525,7 +525,7 @@
     .stat-grid{grid-template-columns:1fr;}
     .quick-actions{grid-template-columns:1fr;}
     .plist-stats{grid-template-columns:1fr;}
-    .ov-product-grid{grid-template-columns:1fr 1fr;}
+    .ov-product-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
     .plist-grid{grid-template-columns:1fr;}
     .share-grid{grid-template-columns:1fr;}
     .table-row{grid-template-columns:1.3fr 1fr 1fr;font-size:12px;padding:10px 12px;}
@@ -555,8 +555,8 @@
      Fill these in from Settings > API in your Supabase project, then redeploy.
      The anon/public key is safe to expose in client code — access is controlled
      by the Row Level Security policies set up in the SQL migration. */
-  var SUPABASE_URL = 'https://namrailslnyuemihyrhj.supabase.co';
-  var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5hbXJhaWxzbG55dWVtaWh5cmhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1ODM4MDksImV4cCI6MjEwMjE1OTgwOX0.8muwQvMeSQvjXQL0aRoLHlNJtM8bHBEd6R82-LTbIXI';
+  var SUPABASE_URL = 'https://YOUR-PROJECT-REF.supabase.co';
+  var SUPABASE_ANON_KEY = 'YOUR-ANON-PUBLIC-KEY';
   var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   /* ================= state ================= */
