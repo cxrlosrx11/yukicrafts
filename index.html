@@ -525,8 +525,8 @@
      Fill these in from Settings > API in your Supabase project, then redeploy.
      The anon/public key is safe to expose in client code — access is controlled
      by the Row Level Security policies set up in the SQL migration. */
-  var SUPABASE_URL = 'https://namrailslnyuemihyrhj.supabase.co';
-  var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5hbXJhaWxzbG55dWVtaWh5cmhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1ODM4MDksImV4cCI6MjEwMjE1OTgwOX0.8muwQvMeSQvjXQL0aRoLHlNJtM8bHBEd6R82-LTbIXI';
+  var SUPABASE_URL = 'https://YOUR-PROJECT-REF.supabase.co';
+  var SUPABASE_ANON_KEY = 'YOUR-ANON-PUBLIC-KEY';
   var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   /* ================= state ================= */
@@ -1269,6 +1269,10 @@
   }
   // Bulk-buy discount: ₱5 off for every complete group of 3 items in the cart.
   // 1–2 items: no discount. 3–5 items: ₱5 off. 6–8 items: ₱10 off. And so on.
+  // Only items in the Pins category count toward this discount.
+  function bulkDiscountQty(cart){
+    return (cart||[]).reduce(function(a,l){ return a + (l.category==='Pins' ? l.qty : 0); },0);
+  }
   function bulkQtyDiscount(qty){
     return Math.floor((qty||0)/3) * 5;
   }
@@ -1279,7 +1283,7 @@
   function posCheckout(){
     if(!state.qsCart.length){ state.errorMsg='Add at least one item first.'; return; }
     var rawTotal = state.qsCart.reduce(function(a,l){ return a+l.price*l.qty; },0);
-    var totalQty = state.qsCart.reduce(function(a,l){ return a+l.qty; },0);
+    var totalQty = bulkDiscountQty(state.qsCart);
     var discount = Math.max(0, parseFloat(state.qsDiscount)||0);
     var total = Math.max(0, cashFriendlyTotal(rawTotal, totalQty) - discount);
     var sale = {id:uid('sale'), date:new Date().toISOString(), items:state.qsCart.slice(), total:total, status:'Completed'};
@@ -2516,13 +2520,13 @@
     var summaryHtml;
     if(mode==='sell'){
       var rawTotal = cart.reduce(function(a,l){ return a+l.price*l.qty; },0);
-      var cartQty = cart.reduce(function(a,l){ return a+l.qty; },0);
+      var cartQty = bulkDiscountQty(cart);
       var qtyDiscount = bulkQtyDiscount(cartQty);
       var discount = Math.max(0, parseFloat(state.qsDiscount)||0);
       var total = Math.max(0, cashFriendlyTotal(rawTotal, cartQty) - discount);
       summaryHtml = '<div class="pos-summary">' +
         '<div class="pos-summary-row"><span>Subtotal</span><span>'+money(rawTotal)+'</span></div>' +
-        (qtyDiscount>0 ? '<div class="pos-summary-row"><span>Bulk discount (every 3 items)</span><span>-'+money(qtyDiscount)+'</span></div>' : '') +
+        (qtyDiscount>0 ? '<div class="pos-summary-row"><span>Bulk discount (every 3 Pins)</span><span>-'+money(qtyDiscount)+'</span></div>' : '') +
         '<div class="pos-summary-row"><span>Order discount</span><input id="pos-discount-input" class="pos-discount-input" type="number" min="0" step="0.01" value="'+escapeHtml(String(state.qsDiscount||0))+'"/></div>' +
         '<div class="pos-summary-row total"><span>Amount due</span><span>'+money(total)+'</span></div>' +
         (state.errorMsg?'<div class="form-error">'+escapeHtml(state.errorMsg)+'</div>':'') +
