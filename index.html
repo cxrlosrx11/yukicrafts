@@ -42,6 +42,27 @@
   #app{min-height:100vh;display:flex;flex-direction:column;}
   .loading-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;color:var(--accent-dark);}
 
+  /* ---------- OFFLINE / SYNC STATUS BANNER ---------- */
+  #ps-sync-banner{
+    position:fixed; left:0; right:0; bottom:0; z-index:9999;
+    display:none; align-items:center; justify-content:center; gap:8px;
+    padding:9px 14px; font-size:13px; font-weight:700;
+    font-family:'Inter',sans-serif;
+    color:#fff; background:var(--amber);
+    box-shadow:0 -4px 16px rgba(0,0,0,0.12);
+    transition:transform .18s ease;
+  }
+  #ps-sync-banner.ps-show{display:flex;}
+  #ps-sync-banner.ps-offline{background:#8A6D3B;}
+  #ps-sync-banner.ps-syncing{background:var(--accent-dark);}
+  #ps-sync-banner.ps-synced{background:var(--green);}
+  #ps-sync-banner .ps-dot{width:8px;height:8px;border-radius:50%;background:#fff;flex:none;}
+  #ps-sync-banner.ps-syncing .ps-dot{animation:psPulse 1s ease-in-out infinite;}
+  @keyframes psPulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+  @media (min-width:640px){
+    #ps-sync-banner{left:auto; right:18px; bottom:18px; border-radius:12px; max-width:340px;}
+  }
+
   /* ---------- BUTTONS / FORMS ---------- */
   .btn{border:none;border-radius:10px;padding:11px 18px;font-weight:700;font-size:14px;transition:transform .12s ease, box-shadow .12s ease;}
   .btn-primary{background:var(--accent);color:#fff;box-shadow:0 6px 16px rgba(156,43,84,0.28);}
@@ -578,7 +599,22 @@
      by the Row Level Security policies set up in the SQL migration. */
   var SUPABASE_URL = 'https://namrailslnyuemihyrhj.supabase.co';
   var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5hbXJhaWxzbG55dWVtaWh5cmhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1ODM4MDksImV4cCI6MjEwMjE1OTgwOX0.8muwQvMeSQvjXQL0aRoLHlNJtM8bHBEd6R82-LTbIXI';
-  var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // If the Supabase SDK (loaded from a CDN) couldn't load because the device is
+  // offline, fall back to a stub client so the app doesn't crash — everything
+  // below treats a stub the same as a normal network failure and works from
+  // the local cache/queue instead.
+  var SB_SDK_AVAILABLE = !!(window.supabase && window.supabase.createClient);
+  var sb = SB_SDK_AVAILABLE ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : {
+    from:function(){ var chain={ select:function(){return chain;}, update:function(){return chain;}, eq:function(){return chain;}, maybeSingle:function(){return Promise.resolve({data:null,error:{message:'offline'}});}, then:function(res){return Promise.resolve({data:null,error:{message:'offline'}}).then(res);} }; return chain; },
+    rpc:function(){ return Promise.resolve({data:null,error:{message:'offline'}}); },
+    auth:{
+      getSession:function(){ return Promise.resolve({data:{session:null},error:{message:'offline'}}); },
+      signUp:function(){ return Promise.resolve({data:null,error:{message:'No internet connection. Connect and try again to create your account.'}}); },
+      signInWithPassword:function(){ return Promise.resolve({data:null,error:{message:'No internet connection. Connect and try again to log in.'}}); },
+      signOut:function(){ return Promise.resolve(); },
+      onAuthStateChange:function(){}
+    }
+  };
 
   /* ================= state ================= */
   var state = {
@@ -654,6 +690,77 @@
   function fmtDate(iso){ return new Date(iso).toLocaleDateString(undefined,{month:'short',day:'numeric'}); }
   function fmtDateTime(iso){ var d=new Date(iso); return d.toLocaleDateString(undefined,{month:'numeric',day:'numeric'})+', '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'}); }
 
+  /* ================= offline support (local cache + sync queue) ================= */
+  // Every write is cached to localStorage immediately (instant, never fails),
+  // then pushed to Supabase. If that push fails or the device is offline, the
+  // change stays queued and is retried automatically once connectivity returns.
+  function withTimeout(promiseLike, ms){
+    return new Promise(function(resolve){
+      var settled=false;
+      var timer=setTimeout(function(){
+        if(settled) return; settled=true;
+        resolve({data:null, error:{message:'Request timed out'}});
+      }, ms||8000);
+      Promise.resolve(promiseLike).then(function(res){
+        if(settled) return; settled=true; clearTimeout(timer); resolve(res);
+      }).catch(function(err){
+        if(settled) return; settled=true; clearTimeout(timer); resolve({data:null, error:err||{message:'Network error'}});
+      });
+    });
+  }
+  function lsGet(key){ try{ var raw=localStorage.getItem(key); return raw?JSON.parse(raw):null; }catch(e){ return null; } }
+  function lsSet(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){} }
+  function lsDel(key){ try{ localStorage.removeItem(key); }catch(e){} }
+  function cacheShop(shop){ if(shop) lsSet('ps_cache_shop_'+shop.id, shop); }
+  function getCachedShop(userId){ return lsGet('ps_cache_shop_'+userId); }
+  function cacheShopData(shopId, data){ if(shopId) lsSet('ps_cache_data_'+shopId, data); }
+  function getCachedShopData(shopId){ return lsGet('ps_cache_data_'+shopId); }
+  function rememberLastShopId(userId){ try{ localStorage.setItem('ps_last_user_id', userId); }catch(e){} }
+  function lastRememberedShopId(){ try{ return localStorage.getItem('ps_last_user_id'); }catch(e){ return null; } }
+  function markDirty(shopId){ try{ localStorage.setItem('ps_dirty_'+shopId, '1'); }catch(e){} }
+  function clearDirty(shopId){ try{ localStorage.removeItem('ps_dirty_'+shopId); }catch(e){} }
+  function isDirty(shopId){ try{ return localStorage.getItem('ps_dirty_'+shopId)==='1'; }catch(e){ return false; } }
+
+  var syncBannerEl = null;
+  var syncRetryTimer = null;
+  function setSyncStatus(mode, text){
+    // mode: 'offline' | 'syncing' | 'synced' | 'hidden'
+    if(!syncBannerEl) return;
+    if(mode==='hidden'){ syncBannerEl.className=''; return; }
+    syncBannerEl.className = 'ps-show ps-'+mode;
+    syncBannerEl.innerHTML = '<span class="ps-dot"></span><span>'+escapeHtml(text)+'</span>';
+  }
+  function refreshSyncStatus(){
+    if(!state.shop){ setSyncStatus('hidden'); return; }
+    var shopId = state.shop.id;
+    if(!navigator.onLine){ setSyncStatus('offline', "You're offline — changes are saved on this device and will sync once you're back online."); return; }
+    if(isDirty(shopId)){ setSyncStatus('syncing', 'Syncing your changes…'); return; }
+    setSyncStatus('hidden');
+  }
+  function flashSynced(){
+    setSyncStatus('synced', 'All changes synced.');
+    setTimeout(function(){ if(state.shop && !isDirty(state.shop.id)) setSyncStatus('hidden'); }, 2200);
+  }
+  function scheduleSyncRetry(){
+    if(syncRetryTimer) return;
+    syncRetryTimer = setTimeout(function(){
+      syncRetryTimer = null;
+      attemptSync();
+    }, 15000);
+  }
+  function attemptSync(){
+    if(!state.shop || !navigator.onLine) { refreshSyncStatus(); return; }
+    var shopId = state.shop.id;
+    if(!isDirty(shopId)) { refreshSyncStatus(); return; }
+    refreshSyncStatus();
+    var snapshot = getCachedShopData(shopId) || state.data;
+    withTimeout(sb.from('shop_data').update({ data: snapshot, updated_at: new Date().toISOString() }).eq('shop_id', shopId), 10000)
+      .then(function(res){
+        if(res && res.error){ scheduleSyncRetry(); refreshSyncStatus(); }
+        else { clearDirty(shopId); flashSynced(); }
+      });
+  }
+
   /* ================= persistence (Supabase — synced across devices/browsers) ================= */
   function defaultShopData(){
     return { products:[], sales:[], conventions:[], costs:[], feedback:[], stockLog:[], customCategories:[], customCostTypes:[] };
@@ -662,53 +769,102 @@
     return { id:row.id, shopName:row.shop_name, username:row.username, email:row.email, currency:row.currency, showcaseSlug:row.showcase_slug, createdAt:row.created_at };
   }
   function loadShopProfile(userId){
-    return sb.from('shops').select('*').eq('id', userId).maybeSingle().then(function(res){
-      if(res.error || !res.data) return null;
-      return shopRowToShop(res.data);
+    return withTimeout(sb.from('shops').select('*').eq('id', userId).maybeSingle(), 8000).then(function(res){
+      if(res.error || !res.data){
+        // Offline or the request timed out — use whatever we last saved locally.
+        var cached = getCachedShop(userId);
+        return cached || null;
+      }
+      var shop = shopRowToShop(res.data);
+      cacheShop(shop);
+      rememberLastShopId(userId);
+      return shop;
     });
   }
   function loadShopData(shopId){
-    return sb.from('shop_data').select('data').eq('shop_id', shopId).maybeSingle().then(function(res){
+    return withTimeout(sb.from('shop_data').select('data').eq('shop_id', shopId).maybeSingle(), 8000).then(function(res){
+      if(res.error){
+        var cached = getCachedShopData(shopId);
+        if(cached) return cached;
+        // No cache and no network yet — fall back to an empty shop so the app
+        // still opens; nothing is lost since nothing was ever saved.
+        return defaultShopData();
+      }
       var d = Object.assign(defaultShopData(), (res.data && res.data.data) || {});
       if(!d.customCategories) d.customCategories=[];
       if(!d.customCostTypes) d.customCostTypes=[];
+      cacheShopData(shopId, d);
       return d;
     });
   }
   // Writes are debounced so rapid edits (typing, qty +/-) don't fire a network
-  // request each time — the whole shop_data blob is upserted after a short pause.
+  // request each time — the whole shop_data blob is cached locally right away,
+  // then upserted to Supabase after a short pause. If that upload fails or the
+  // device is offline, the change stays queued in localStorage and is retried
+  // automatically (see attemptSync / the 'online' listener below).
   var saveShopDataTimer = null;
   function saveShopData(){
     if(!state.shop) return Promise.resolve();
     var shopId = state.shop.id;
+    var snapshot = state.data;
+    cacheShopData(shopId, snapshot);
+    markDirty(shopId);
+    refreshSyncStatus();
     if(saveShopDataTimer) clearTimeout(saveShopDataTimer);
     return new Promise(function(resolve){
       saveShopDataTimer = setTimeout(function(){
-        var snapshot = state.data;
-        sb.from('shop_data').update({ data: snapshot, updated_at: new Date().toISOString() }).eq('shop_id', shopId).then(function(){ resolve(); });
+        if(!navigator.onLine){ scheduleSyncRetry(); refreshSyncStatus(); resolve(); return; }
+        withTimeout(sb.from('shop_data').update({ data: snapshot, updated_at: new Date().toISOString() }).eq('shop_id', shopId), 10000)
+          .then(function(res){
+            if(res && res.error){ scheduleSyncRetry(); refreshSyncStatus(); }
+            else { clearDirty(shopId); flashSynced(); }
+            resolve();
+          });
       }, 500);
     });
   }
   // Persists edits to the shop's own profile row (shop name, currency).
   function saveDB(){
     if(!state.shop) return Promise.resolve();
-    return sb.from('shops').update({
+    cacheShop(state.shop);
+    if(!navigator.onLine){ markDirty(state.shop.id); refreshSyncStatus(); return Promise.resolve(); }
+    return withTimeout(sb.from('shops').update({
       shop_name: state.shop.shopName,
       currency: state.shop.currency
-    }).eq('id', state.shop.id);
+    }).eq('id', state.shop.id), 8000).then(function(res){
+      if(res && res.error){ markDirty(state.shop.id); refreshSyncStatus(); }
+      return res;
+    });
   }
   function loadSession(){
-    return sb.auth.getSession().then(function(res){
+    return withTimeout(sb.auth.getSession(), 8000).then(function(res){
       var session = res.data && res.data.session;
-      if(!session) return;
-      return loadShopProfile(session.user.id).then(function(shop){
-        if(!shop) return;
-        state.shop = shop;
-        return loadShopData(shop.id).then(function(d){
-          state.data = d;
-          state.view = 'dashboard';
+      if(session){
+        return loadShopProfile(session.user.id).then(function(shop){
+          if(!shop) return;
+          state.shop = shop;
+          return loadShopData(shop.id).then(function(d){
+            state.data = d;
+            state.view = 'dashboard';
+          });
         });
-      });
+      }
+      // No live session. This could mean the user genuinely isn't logged in
+      // (show the login screen), or it could mean the connection is down/
+      // unreliable and Supabase simply couldn't confirm a session (res.error
+      // set, e.g. by our timeout wrapper). In the second case, if this device
+      // was previously logged in, resume from the local cache so the shop
+      // keeps working without a good connection.
+      var connectionIssue = !!(res && res.error) || !navigator.onLine;
+      if(connectionIssue){
+        var userId = lastRememberedShopId();
+        var cachedShop = userId ? getCachedShop(userId) : null;
+        if(cachedShop){
+          state.shop = cachedShop;
+          state.data = getCachedShopData(cachedShop.id) || defaultShopData();
+          state.view = 'dashboard';
+        }
+      }
     });
   }
 
@@ -851,6 +1007,9 @@
     if(!/^[a-z0-9_.-]+$/.test(username)){
       state.errorMsg='Username can only contain letters, numbers, dots, dashes, or underscores.'; rerender(); return;
     }
+    if(!navigator.onLine){
+      state.errorMsg="You're offline — creating a shop needs an internet connection the first time. Connect and try again."; rerender(); return;
+    }
     state.errorMsg=''; state.busy=true; rerender();
     sb.rpc('is_username_taken', {uname:username}).then(function(res){
       if(res.data===true) throw {friendly:'That username is already taken.'};
@@ -881,6 +1040,9 @@
     var idf=(fd.get('identifier')||'').trim().toLowerCase();
     var password=fd.get('password')||'';
     if(!idf || !password){ state.errorMsg='Enter your username/email and password.'; rerender(); return; }
+    if(!navigator.onLine){
+      state.errorMsg="You're offline — the first login on this device needs an internet connection. Connect and try again."; rerender(); return;
+    }
     state.errorMsg=''; state.busy=true; rerender();
     var emailLookup = idf.indexOf('@')>-1 ? Promise.resolve(idf) : sb.rpc('email_for_username',{uname:idf}).then(function(res){ return res.data; });
     emailLookup.then(function(email){
@@ -2680,6 +2842,15 @@
 
   function init(){
     appEl = document.getElementById('app');
+
+    // Offline / sync status banner (lives outside the normal render cycle so
+    // it can update instantly without waiting on rerender()).
+    syncBannerEl = document.createElement('div');
+    syncBannerEl.id = 'ps-sync-banner';
+    document.body.appendChild(syncBannerEl);
+    window.addEventListener('online', function(){ refreshSyncStatus(); attemptSync(); });
+    window.addEventListener('offline', function(){ refreshSyncStatus(); });
+
     appEl.addEventListener('click', function(e){
       var el = e.target.closest('[data-action]');
       if(!el){
@@ -2703,9 +2874,12 @@
     loadSession().then(function(){
       state.loaded = true;
       rerender();
+      refreshSyncStatus();
+      if(state.shop && isDirty(state.shop.id)) attemptSync();
     }).catch(function(){
       state.loaded = true;
       rerender();
+      refreshSyncStatus();
     });
 
     // Keep the app in sync if the user logs out (or their session expires)
