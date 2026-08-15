@@ -700,7 +700,7 @@
       var timer=setTimeout(function(){
         if(settled) return; settled=true;
         resolve({data:null, error:{message:'Request timed out'}});
-      }, ms||8000);
+      }, ms||4000);
       Promise.resolve(promiseLike).then(function(res){
         if(settled) return; settled=true; clearTimeout(timer); resolve(res);
       }).catch(function(err){
@@ -746,7 +746,7 @@
     syncRetryTimer = setTimeout(function(){
       syncRetryTimer = null;
       attemptSync();
-    }, 15000);
+    }, 6000);
   }
   function attemptSync(){
     if(!state.shop || !navigator.onLine) { refreshSyncStatus(); return; }
@@ -754,7 +754,7 @@
     if(!isDirty(shopId)) { refreshSyncStatus(); return; }
     refreshSyncStatus();
     var snapshot = getCachedShopData(shopId) || state.data;
-    withTimeout(sb.from('shop_data').update({ data: snapshot, updated_at: new Date().toISOString() }).eq('shop_id', shopId), 10000)
+    withTimeout(sb.from('shop_data').update({ data: snapshot, updated_at: new Date().toISOString() }).eq('shop_id', shopId), 5000)
       .then(function(res){
         if(res && res.error){ scheduleSyncRetry(); refreshSyncStatus(); }
         else { clearDirty(shopId); flashSynced(); }
@@ -769,7 +769,8 @@
     return { id:row.id, shopName:row.shop_name, username:row.username, email:row.email, currency:row.currency, showcaseSlug:row.showcase_slug, createdAt:row.created_at };
   }
   function loadShopProfile(userId){
-    return withTimeout(sb.from('shops').select('*').eq('id', userId).maybeSingle(), 8000).then(function(res){
+    if(!navigator.onLine) return Promise.resolve(getCachedShop(userId));
+    return withTimeout(sb.from('shops').select('*').eq('id', userId).maybeSingle(), 4000).then(function(res){
       if(res.error || !res.data){
         // Offline or the request timed out — use whatever we last saved locally.
         var cached = getCachedShop(userId);
@@ -782,7 +783,8 @@
     });
   }
   function loadShopData(shopId){
-    return withTimeout(sb.from('shop_data').select('data').eq('shop_id', shopId).maybeSingle(), 8000).then(function(res){
+    if(!navigator.onLine) return Promise.resolve(getCachedShopData(shopId) || defaultShopData());
+    return withTimeout(sb.from('shop_data').select('data').eq('shop_id', shopId).maybeSingle(), 4000).then(function(res){
       if(res.error){
         var cached = getCachedShopData(shopId);
         if(cached) return cached;
@@ -814,7 +816,7 @@
     return new Promise(function(resolve){
       saveShopDataTimer = setTimeout(function(){
         if(!navigator.onLine){ scheduleSyncRetry(); refreshSyncStatus(); resolve(); return; }
-        withTimeout(sb.from('shop_data').update({ data: snapshot, updated_at: new Date().toISOString() }).eq('shop_id', shopId), 10000)
+        withTimeout(sb.from('shop_data').update({ data: snapshot, updated_at: new Date().toISOString() }).eq('shop_id', shopId), 5000)
           .then(function(res){
             if(res && res.error){ scheduleSyncRetry(); refreshSyncStatus(); }
             else { clearDirty(shopId); flashSynced(); }
@@ -831,13 +833,23 @@
     return withTimeout(sb.from('shops').update({
       shop_name: state.shop.shopName,
       currency: state.shop.currency
-    }).eq('id', state.shop.id), 8000).then(function(res){
+    }).eq('id', state.shop.id), 4000).then(function(res){
       if(res && res.error){ markDirty(state.shop.id); refreshSyncStatus(); }
       return res;
     });
   }
   function loadSession(){
-    return withTimeout(sb.auth.getSession(), 8000).then(function(res){
+    if(!navigator.onLine){
+      var offlineUserId = lastRememberedShopId();
+      var offlineShop = offlineUserId ? getCachedShop(offlineUserId) : null;
+      if(offlineShop){
+        state.shop = offlineShop;
+        state.data = getCachedShopData(offlineShop.id) || defaultShopData();
+        state.view = 'dashboard';
+      }
+      return Promise.resolve();
+    }
+    return withTimeout(sb.auth.getSession(), 4000).then(function(res){
       var session = res.data && res.data.session;
       if(session){
         return loadShopProfile(session.user.id).then(function(shop){
